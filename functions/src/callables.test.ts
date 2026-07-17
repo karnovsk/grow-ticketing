@@ -1,5 +1,6 @@
 import { createTicketIfNew } from './ticketService';
 import { handleValidateTicket, handleResendTicketEmail } from './callables';
+import { sendTicketEmail } from './email';
 import { clearFirestoreEmulator } from './testHelpers';
 
 jest.mock('./qr', () => ({ generateQrDataUri: jest.fn().mockResolvedValue('data:image/png;base64,ABC') }));
@@ -35,6 +36,14 @@ describe('handleValidateTicket', () => {
   test('throws ticket_not_found for an unknown id', async () => {
     await expect(handleValidateTicket({ ticketId: 'nope' }, { uid: 'staff-1' })).rejects.toThrow('ticket_not_found');
   });
+
+  test('returns already_validated without throwing on a second validation', async () => {
+    const { ticket } = await createTicketIfNew({ ...sampleInput, transactionCode: 'TX-210' });
+    await handleValidateTicket({ ticketId: ticket.ticketId }, { uid: 'staff-1' });
+    const result = await handleValidateTicket({ ticketId: ticket.ticketId }, { uid: 'staff-2' });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe('already_validated');
+  });
 });
 
 describe('handleResendTicketEmail', () => {
@@ -50,5 +59,12 @@ describe('handleResendTicketEmail', () => {
 
   test('throws unauthenticated when auth is missing', async () => {
     await expect(handleResendTicketEmail({ ticketId: 'any' }, undefined)).rejects.toThrow('unauthenticated');
+  });
+
+  test('reports sent:false and marks emailStatus failed when the email provider fails', async () => {
+    const { ticket } = await createTicketIfNew({ ...sampleInput, transactionCode: 'TX-211' });
+    (sendTicketEmail as jest.Mock).mockResolvedValueOnce(false);
+    const result = await handleResendTicketEmail({ ticketId: ticket.ticketId }, { uid: 'staff-1' });
+    expect(result.sent).toBe(false);
   });
 });
