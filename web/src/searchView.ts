@@ -37,10 +37,27 @@ export function renderSearchView(container: HTMLElement) {
         const confirmButton = document.createElement('button');
         confirmButton.textContent = 'Validate manually';
         confirmButton.addEventListener('click', async () => {
-          await validateTicket(ticket.ticketId, noteInput.value);
-          summary.textContent += ' — validated';
-          noteInput.remove();
-          confirmButton.remove();
+          try {
+            const result = (await validateTicket(ticket.ticketId, noteInput.value)) as {
+              ok: boolean;
+              reason?: string;
+            };
+            if (result.ok) {
+              summary.textContent += ' — validated';
+              noteInput.remove();
+              confirmButton.remove();
+            } else if (result.reason === 'already_validated') {
+              summary.textContent += ' — already picked up (validated by someone else just now)';
+              noteInput.remove();
+              confirmButton.remove();
+            } else {
+              summary.textContent += ' — ticket not found';
+              noteInput.remove();
+              confirmButton.remove();
+            }
+          } catch {
+            summary.textContent += ' — something went wrong, please try again';
+          }
         });
         li.appendChild(noteInput);
         li.appendChild(confirmButton);
