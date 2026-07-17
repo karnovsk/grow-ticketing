@@ -2,7 +2,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { validateTicket } from './ticketApi';
 import { formatItemList } from './format';
 
-export function renderScanView(container: HTMLElement) {
+export function renderScanView(container: HTMLElement): () => void {
   container.innerHTML = `
     <div id="qr-reader" style="width: 300px;"></div>
     <div id="scan-result"></div>
@@ -42,4 +42,14 @@ export function renderScanView(container: HTMLElement) {
     .catch(() => {
       resultEl.textContent = 'Could not access the camera. Check camera permissions and try again.';
     });
+
+  return () => {
+    // Release the camera when navigating away — without this, the stream
+    // keeps running (browser camera indicator stays lit, battery drains),
+    // and a second Html5Qrcode instance would conflict with it if the user
+    // navigates back to Scan. stop() rejects if the scanner never
+    // successfully started (e.g. navigated away before start() resolved);
+    // that's not an error worth surfacing here.
+    scanner.stop().catch(() => {});
+  };
 }

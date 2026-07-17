@@ -5,7 +5,27 @@ import { renderDashboardView } from './dashboardView';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 
+let scanCleanup: (() => void) | null = null;
+let hashListenerAttached = false;
+
+function renderRoute() {
+  const view = document.querySelector<HTMLElement>('#view');
+  if (!view) return;
+  if (scanCleanup) {
+    scanCleanup();
+    scanCleanup = null;
+  }
+  const route = window.location.hash.replace('#', '') || 'scan';
+  if (route === 'scan') scanCleanup = renderScanView(view);
+  else if (route === 'search') renderSearchView(view);
+  else if (route === 'dashboard') renderDashboardView(view);
+}
+
 function renderLogin() {
+  if (scanCleanup) {
+    scanCleanup();
+    scanCleanup = null;
+  }
   app.innerHTML = `
     <form id="login-form">
       <input id="email" type="email" placeholder="Email" required />
@@ -43,15 +63,10 @@ function renderApp(userEmail: string) {
   `;
   document.querySelector<HTMLButtonElement>('#logout-button')!.addEventListener('click', () => logout());
 
-  function renderRoute() {
-    const view = document.querySelector<HTMLElement>('#view')!;
-    const route = window.location.hash.replace('#', '') || 'scan';
-    if (route === 'scan') renderScanView(view);
-    else if (route === 'search') renderSearchView(view);
-    else if (route === 'dashboard') renderDashboardView(view);
+  if (!hashListenerAttached) {
+    window.addEventListener('hashchange', renderRoute);
+    hashListenerAttached = true;
   }
-
-  window.addEventListener('hashchange', renderRoute);
   renderRoute();
 }
 
