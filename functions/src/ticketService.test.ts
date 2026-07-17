@@ -26,6 +26,11 @@ describe('ticketService', () => {
   });
 
   afterAll(async () => {
+    // terminate()/delete() close the Firestore client, but the underlying gRPC
+    // channel's socket can outlive Jest's 1s open-handle check by a hair — that's
+    // why test:emulator runs with --forceExit. Not a real leak; if a future test
+    // file hangs for a different reason, --forceExit will mask it, so investigate
+    // new hangs on their own merits rather than assuming this is the cause.
     await db.terminate();
     await admin.app().delete();
   });
