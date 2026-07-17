@@ -1,3 +1,4 @@
+import { logger } from 'firebase-functions/v2';
 import { GrowWebhookPayload, TicketItem } from './types';
 import { verifyWebhookKey } from './webhookAuth';
 import { createTicketIfNew, updateEmailStatus } from './ticketService';
@@ -16,6 +17,7 @@ function parsePayload(body: unknown): GrowWebhookPayload | null {
   if (typeof record.transactionCode !== 'string') return null;
   if (typeof record.paymentSum !== 'number') return null;
   if (typeof record.payerEmail !== 'string') return null;
+  if (!Array.isArray(record.productData) || record.productData.length === 0) return null;
   return {
     webhookKey: record.webhookKey,
     transactionCode: record.transactionCode,
@@ -23,16 +25,18 @@ function parsePayload(body: unknown): GrowWebhookPayload | null {
     payerFullName: typeof record.payerFullName === 'string' ? record.payerFullName : undefined,
     payerEmail: record.payerEmail,
     payerPhone: typeof record.payerPhone === 'string' ? record.payerPhone : undefined,
-    productData: Array.isArray(record.productData) ? (record.productData as TicketItem[]) : undefined,
+    productData: record.productData as TicketItem[],
   };
 }
 
 export async function handleGrowWebhook(rawBody: unknown): Promise<WebhookResult> {
   const payload = parsePayload(rawBody);
   if (!payload) {
+    logger.warn('Rejected Grow webhook: missing or malformed required fields', { body: rawBody });
     return { status: 400, body: { error: 'invalid_payload' } };
   }
   if (!verifyWebhookKey(payload)) {
+    logger.warn('Rejected Grow webhook: invalid webhookKey', { transactionCode: payload.transactionCode });
     return { status: 401, body: { error: 'invalid_webhook_key' } };
   }
 

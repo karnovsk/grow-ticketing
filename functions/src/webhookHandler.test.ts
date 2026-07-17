@@ -54,4 +54,9 @@ describe('handleGrowWebhook', () => {
     const result = await handleGrowWebhook({ webhookKey: 'secret-1' });
     expect(result.status).toBe(400);
   });
+
+  test('rejects a payload with no items', async () => {
+    const result = await handleGrowWebhook({ ...validPayload, productData: [] });
+    expect(result.status).toBe(400);
+  });
 });
