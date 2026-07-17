@@ -1,0 +1,52 @@
+import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { db } from './firebaseClient';
+import { resendTicketEmail } from './ticketApi';
+import { formatItemList, formatTimestamp } from './format';
+
+export async function renderDashboardView(container: HTMLElement) {
+  container.innerHTML = `
+    <select id="status-filter">
+      <option value="issued">Issued</option>
+      <option value="validated">Validated</option>
+    </select>
+    <ul id="ticket-list"></ul>
+  `;
+  const statusFilter = container.querySelector<HTMLSelectElement>('#status-filter')!;
+  const list = container.querySelector<HTMLUListElement>('#ticket-list')!;
+
+  async function load() {
+    const q = query(collection(db, 'tickets'), where('status', '==', statusFilter.value), orderBy('issuedAt', 'desc'));
+    const snap = await getDocs(q);
+    list.innerHTML = '';
+    snap.forEach((doc) => {
+      const ticketId = doc.id;
+      const data = doc.data() as {
+        customerName: string;
+        items: { name: string; quantity: number }[];
+        validatedAt: { seconds: number } | null;
+        emailStatus: 'sent' | 'failed';
+      };
+      const li = document.createElement('li');
+      const summary = document.createElement('span');
+      const validatedText = data.validatedAt ? ` (validated ${formatTimestamp(data.validatedAt.seconds)})` : '';
+      summary.textContent = `${data.customerName} — ${formatItemList(data.items)}${validatedText}`;
+      li.appendChild(summary);
+
+      if (data.emailStatus === 'failed') {
+        const resendButton = document.createElement('button');
+        resendButton.textContent = 'Resend email';
+        resendButton.addEventListener('click', async () => {
+          resendButton.disabled = true;
+          const result = (await resendTicketEmail(ticketId)) as { sent: boolean };
+          resendButton.textContent = result.sent ? 'Email resent' : 'Resend failed — try again';
+          resendButton.disabled = result.sent;
+        });
+        li.appendChild(resendButton);
+      }
+      list.appendChild(li);
+    });
+  }
+
+  statusFilter.addEventListener('change', load);
+  await load();
+}

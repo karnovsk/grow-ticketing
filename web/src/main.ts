@@ -1,5 +1,7 @@
 import { login, logout, watchAuthState } from './auth';
+import { renderScanView } from './scanView';
 import { renderSearchView } from './searchView';
+import { renderDashboardView } from './dashboardView';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 
@@ -40,7 +42,17 @@ function renderApp(userEmail: string) {
     <main id="view"></main>
   `;
   document.querySelector<HTMLButtonElement>('#logout-button')!.addEventListener('click', () => logout());
-  renderSearchView(document.querySelector<HTMLElement>('#view')!);
+
+  function renderRoute() {
+    const view = document.querySelector<HTMLElement>('#view')!;
+    const route = window.location.hash.replace('#', '') || 'scan';
+    if (route === 'scan') renderScanView(view);
+    else if (route === 'search') renderSearchView(view);
+    else if (route === 'dashboard') renderDashboardView(view);
+  }
+
+  window.addEventListener('hashchange', renderRoute);
+  renderRoute();
 }
 
 watchAuthState((user) => {
