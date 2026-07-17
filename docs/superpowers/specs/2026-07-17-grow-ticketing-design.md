@@ -66,6 +66,8 @@ Single Firestore collection: **`tickets`**. Document ID = the ticket's random to
 
 No separate "staff" collection: staff accounts are individually provisioned in the Firebase Auth console (no public self-signup), so any authenticated user is staff by definition. Firestore security rules require `request.auth != null` for all reads/writes to `tickets`.
 
+**Collection: `settings`, document `emailTemplate` (optional)** — holds the customer-facing email's non-QR wording (`subject`, `greeting`, `qrInstructions`, `itemsLabel`), read by the backend when sending. If the document doesn't exist, built-in defaults are used. This is only ever read/written by Cloud Functions (Admin SDK) or directly via the Firebase console — never by the staff web app — so it needs no Firestore security rule of its own.
+
 **Retention:** ticket records (including customer PII) are kept indefinitely — no scheduled deletion. This was a deliberate choice for support/audit purposes; revisit if data volume or privacy requirements change.
 
 ## Error Handling & Edge Cases
