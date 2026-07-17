@@ -61,11 +61,13 @@ export async function validateTicket(
   note: string | null = null,
 ): Promise<ValidateResult> {
   const ref = db.collection(COLLECTION).doc(ticketId);
-  const doc = await ref.get();
-  if (!doc.exists) return { ok: false, reason: 'not_found' };
-  const ticket = doc.data() as Ticket;
-  if (ticket.status === 'validated') return { ok: false, reason: 'already_validated', ticket };
-  const validatedAt = admin.firestore.Timestamp.now();
-  await ref.update({ status: 'validated', validatedAt, validatedBy, validationNote: note });
-  return { ok: true, ticket: { ...ticket, status: 'validated', validatedAt, validatedBy, validationNote: note } };
+  return db.runTransaction(async (tx): Promise<ValidateResult> => {
+    const doc = await tx.get(ref);
+    if (!doc.exists) return { ok: false, reason: 'not_found' };
+    const ticket = doc.data() as Ticket;
+    if (ticket.status === 'validated') return { ok: false, reason: 'already_validated', ticket };
+    const validatedAt = admin.firestore.Timestamp.now();
+    tx.update(ref, { status: 'validated', validatedAt, validatedBy, validationNote: note });
+    return { ok: true, ticket: { ...ticket, status: 'validated', validatedAt, validatedBy, validationNote: note } };
+  });
 }

@@ -1,3 +1,4 @@
+import * as admin from 'firebase-admin';
 import {
   createTicket,
   findTicketByTransactionCode,
@@ -5,6 +6,7 @@ import {
   updateEmailStatus,
   validateTicket,
 } from './ticketService';
+import { db } from './admin';
 import { clearFirestoreEmulator } from './testHelpers';
 
 const PROJECT_ID = process.env.GCLOUD_PROJECT || 'demo-grow-ticketing';
@@ -21,6 +23,11 @@ const sampleInput = {
 describe('ticketService', () => {
   afterEach(async () => {
     await clearFirestoreEmulator(PROJECT_ID);
+  });
+
+  afterAll(async () => {
+    await db.terminate();
+    await admin.app().delete();
   });
 
   test('createTicket writes a ticket with status issued', async () => {
