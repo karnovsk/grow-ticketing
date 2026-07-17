@@ -33,8 +33,10 @@ describe('handleValidateTicket', () => {
     await expect(handleValidateTicket({ ticketId: ticket.ticketId }, undefined)).rejects.toThrow('unauthenticated');
   });
 
-  test('throws ticket_not_found for an unknown id', async () => {
-    await expect(handleValidateTicket({ ticketId: 'nope' }, { uid: 'staff-1' })).rejects.toThrow('ticket_not_found');
+  test('returns not_found without throwing for an unknown id', async () => {
+    const result = await handleValidateTicket({ ticketId: 'nope' }, { uid: 'staff-1' });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe('not_found');
   });
 
   test('returns already_validated without throwing on a second validation', async () => {

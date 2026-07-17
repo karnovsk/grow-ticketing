@@ -13,11 +13,11 @@ export async function handleValidateTicket(data: ValidateTicketData, auth: Calla
   if (!auth) {
     throw new Error('unauthenticated');
   }
-  const result = await validateTicket(data.ticketId, auth.uid, data.note ?? null);
-  if (!result.ok && result.reason === 'not_found') {
-    throw new Error('ticket_not_found');
-  }
-  return result;
+  // validateTicket's ValidateResult already models "not found" as a normal
+  // return value (not an error) alongside "already validated" and success —
+  // return it as-is so callers can branch on `ok`/`reason` without needing
+  // to catch a thrown error for an expected, everyday outcome.
+  return validateTicket(data.ticketId, auth.uid, data.note ?? null);
 }
 
 export async function handleResendTicketEmail(data: ResendEmailData, auth: CallableAuth | undefined) {
