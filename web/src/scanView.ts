@@ -47,9 +47,15 @@ export function renderScanView(container: HTMLElement): () => void {
     // Release the camera when navigating away — without this, the stream
     // keeps running (browser camera indicator stays lit, battery drains),
     // and a second Html5Qrcode instance would conflict with it if the user
-    // navigates back to Scan. stop() rejects if the scanner never
-    // successfully started (e.g. navigated away before start() resolved);
-    // that's not an error worth surfacing here.
-    scanner.stop().catch(() => {});
+    // navigates back to Scan. stop() *throws synchronously* (not just a
+    // rejected promise) if the scanner never reached a running/paused
+    // state — e.g. navigated away before start() resolved, or start()
+    // already failed (denied permission, no camera) — so this needs a
+    // try/catch around the call itself, not just a .catch() on its result.
+    try {
+      scanner.stop().catch(() => {});
+    } catch {
+      /* scanner never started — nothing to stop */
+    }
   };
 }
