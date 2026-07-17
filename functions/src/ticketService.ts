@@ -4,6 +4,11 @@ import { db } from './admin';
 import { Ticket, TicketItem } from './types';
 
 const COLLECTION = 'tickets';
+// Idempotency lock keyed by Grow's transactionCode: lets createTicketIfNew
+// check-and-create atomically inside one transaction, so two webhook calls
+// for the same purchase arriving concurrently can't both create a ticket
+// (a plain query-then-create, which was here before, could not guarantee that).
+const TRANSACTION_LOCKS_COLLECTION = 'transactionLocks';
 
 export interface NewTicketInput {
   transactionCode: string;
@@ -14,15 +19,8 @@ export interface NewTicketInput {
   paymentSum: number;
 }
 
-export async function findTicketByTransactionCode(transactionCode: string): Promise<Ticket | null> {
-  const snap = await db.collection(COLLECTION).where('transactionCode', '==', transactionCode).limit(1).get();
-  if (snap.empty) return null;
-  return snap.docs[0].data() as Ticket;
-}
-
-export async function createTicket(input: NewTicketInput): Promise<Ticket> {
-  const ticketId = randomUUID();
-  const ticket: Ticket = {
+function buildNewTicket(ticketId: string, input: NewTicketInput): Ticket {
+  return {
     ticketId,
     status: 'issued',
     transactionCode: input.transactionCode,
@@ -37,8 +35,28 @@ export async function createTicket(input: NewTicketInput): Promise<Ticket> {
     validationNote: null,
     emailStatus: 'failed',
   };
-  await db.collection(COLLECTION).doc(ticketId).set(ticket);
-  return ticket;
+}
+
+export interface CreateTicketIfNewResult {
+  ticket: Ticket;
+  created: boolean;
+}
+
+export async function createTicketIfNew(input: NewTicketInput): Promise<CreateTicketIfNewResult> {
+  const lockRef = db.collection(TRANSACTION_LOCKS_COLLECTION).doc(input.transactionCode);
+  const ticketId = randomUUID();
+  return db.runTransaction(async (tx): Promise<CreateTicketIfNewResult> => {
+    const lockDoc = await tx.get(lockRef);
+    if (lockDoc.exists) {
+      const existingTicketId = (lockDoc.data() as { ticketId: string }).ticketId;
+      const existingTicketDoc = await tx.get(db.collection(COLLECTION).doc(existingTicketId));
+      return { ticket: existingTicketDoc.data() as Ticket, created: false };
+    }
+    const ticket = buildNewTicket(ticketId, input);
+    tx.set(db.collection(COLLECTION).doc(ticketId), ticket);
+    tx.set(lockRef, { ticketId });
+    return { ticket, created: true };
+  });
 }
 
 export async function getTicketById(ticketId: string): Promise<Ticket | null> {

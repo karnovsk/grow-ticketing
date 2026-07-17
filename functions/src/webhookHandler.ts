@@ -1,6 +1,6 @@
 import { GrowWebhookPayload, TicketItem } from './types';
 import { verifyWebhookKey } from './webhookAuth';
-import { createTicket, findTicketByTransactionCode, updateEmailStatus } from './ticketService';
+import { createTicketIfNew, updateEmailStatus } from './ticketService';
 import { generateQrDataUri } from './qr';
 import { sendTicketEmail } from './email';
 
@@ -36,12 +36,7 @@ export async function handleGrowWebhook(rawBody: unknown): Promise<WebhookResult
     return { status: 401, body: { error: 'invalid_webhook_key' } };
   }
 
-  const existing = await findTicketByTransactionCode(payload.transactionCode);
-  if (existing) {
-    return { status: 200, body: { ticketId: existing.ticketId, created: false } };
-  }
-
-  const ticket = await createTicket({
+  const { ticket, created } = await createTicketIfNew({
     transactionCode: payload.transactionCode,
     customerName: payload.payerFullName || 'Customer',
     customerEmail: payload.payerEmail || '',
@@ -49,6 +44,10 @@ export async function handleGrowWebhook(rawBody: unknown): Promise<WebhookResult
     items: payload.productData || [],
     paymentSum: payload.paymentSum,
   });
+
+  if (!created) {
+    return { status: 200, body: { ticketId: ticket.ticketId, created: false } };
+  }
 
   const qrDataUri = await generateQrDataUri(ticket.ticketId);
   const sent = await sendTicketEmail(ticket, qrDataUri);
