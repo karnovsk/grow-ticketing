@@ -29,6 +29,10 @@ export async function sendTicketEmail(ticket: Ticket, qrDataUri: string): Promis
   if (!apiKey) {
     throw new Error('RESEND_API_KEY is not configured');
   }
+  const fromAddress = process.env.TICKET_EMAIL_FROM;
+  if (!fromAddress) {
+    throw new Error('TICKET_EMAIL_FROM is not configured');
+  }
   const settings = await getEmailSettings();
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -37,7 +41,7 @@ export async function sendTicketEmail(ticket: Ticket, qrDataUri: string): Promis
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: process.env.TICKET_EMAIL_FROM || 'tickets@example.com',
+      from: fromAddress,
       to: ticket.customerEmail,
       subject: settings.subject,
       html: buildTicketEmailHtml(ticket, qrDataUri, settings),

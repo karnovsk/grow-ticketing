@@ -10,6 +10,13 @@ export interface WebhookResult {
   body: Record<string, unknown>;
 }
 
+function redactForLogging(body: unknown): unknown {
+  if (typeof body !== 'object' || body === null) return body;
+  const record = { ...(body as Record<string, unknown>) };
+  if ('webhookKey' in record) record.webhookKey = '[redacted]';
+  return record;
+}
+
 function parsePayload(body: unknown): GrowWebhookPayload | null {
   if (typeof body !== 'object' || body === null) return null;
   const record = body as Record<string, unknown>;
@@ -32,7 +39,7 @@ function parsePayload(body: unknown): GrowWebhookPayload | null {
 export async function handleGrowWebhook(rawBody: unknown): Promise<WebhookResult> {
   const payload = parsePayload(rawBody);
   if (!payload) {
-    logger.warn('Rejected Grow webhook: missing or malformed required fields', { body: rawBody });
+    logger.warn('Rejected Grow webhook: missing or malformed required fields', { body: redactForLogging(rawBody) });
     return { status: 400, body: { error: 'invalid_payload' } };
   }
   if (!verifyWebhookKey(payload)) {

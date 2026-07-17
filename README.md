@@ -15,7 +15,7 @@ Issues an emailed QR-code pickup ticket when a Grow purchase webhook fires, and 
    ```
 6. Create at least one staff account in Firebase console → Authentication → Users → Add user (email + password). Repeat per staff member — there is no public self-signup by design.
 7. Copy `web/.env.example` to `web/.env` and fill in the values from Firebase console → Project settings → General → Your apps → Web app config.
-8. Copy `functions/.env.example` to `functions/.env` and set `TICKET_EMAIL_FROM` to your verified sender address (e.g. `tickets@yourdomain.com`). **This is required** — `email.ts` falls back to a placeholder (`tickets@example.com`) if left unset, which Resend will reject as unverified, so every ticket email would silently fail (`emailStatus: "failed"`) until this is set. Functions v2 loads `.env` automatically, both for `firebase emulators:start` and at deploy time — no redeploy-specific step needed beyond having the file present.
+8. Copy `functions/.env.example` to `functions/.env` and set `TICKET_EMAIL_FROM` to your verified sender address (e.g. `tickets@yourdomain.com`). **This is required** — `sendTicketEmail` throws if it's unset or empty (deliberately: an unverified placeholder sender would otherwise fail silently), so ticket-issuing webhook calls will fail loudly until this is set. Functions v2 loads `.env` automatically, both for `firebase emulators:start` and at deploy time — no redeploy-specific step needed beyond having the file present.
 
 ## Local development
 

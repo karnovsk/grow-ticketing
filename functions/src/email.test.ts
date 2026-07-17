@@ -63,14 +63,17 @@ describe('buildTicketEmailHtml', () => {
 describe('sendTicketEmail', () => {
   const originalFetch = global.fetch;
   const originalKey = process.env.RESEND_API_KEY;
+  const originalFrom = process.env.TICKET_EMAIL_FROM;
 
   beforeEach(() => {
     process.env.RESEND_API_KEY = 'test-key';
+    process.env.TICKET_EMAIL_FROM = 'tickets@verified-domain.example';
   });
 
   afterEach(() => {
     global.fetch = originalFetch;
     process.env.RESEND_API_KEY = originalKey;
+    process.env.TICKET_EMAIL_FROM = originalFrom;
   });
 
   test('returns true when Resend responds ok', async () => {
@@ -88,5 +91,15 @@ describe('sendTicketEmail', () => {
   test('throws when RESEND_API_KEY is not configured', async () => {
     delete process.env.RESEND_API_KEY;
     await expect(sendTicketEmail(sampleTicket, 'data:image/png;base64,ABC')).rejects.toThrow('RESEND_API_KEY');
+  });
+
+  test('throws when TICKET_EMAIL_FROM is not configured', async () => {
+    delete process.env.TICKET_EMAIL_FROM;
+    await expect(sendTicketEmail(sampleTicket, 'data:image/png;base64,ABC')).rejects.toThrow('TICKET_EMAIL_FROM');
+  });
+
+  test('throws when TICKET_EMAIL_FROM is set to an empty string', async () => {
+    process.env.TICKET_EMAIL_FROM = '';
+    await expect(sendTicketEmail(sampleTicket, 'data:image/png;base64,ABC')).rejects.toThrow('TICKET_EMAIL_FROM');
   });
 });
