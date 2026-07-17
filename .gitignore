@@ -4,3 +4,5 @@ lib/
 dist/
 *.env
 !.env.example
+firestore-debug.log
+ui-debug.log
