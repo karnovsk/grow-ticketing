@@ -1,5 +1,5 @@
 import { login, logout, watchAuthState } from './auth';
-import { renderScanView } from './scanView';
+import { renderSearchView } from './searchView';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 
@@ -40,7 +40,7 @@ function renderApp(userEmail: string) {
     <main id="view"></main>
   `;
   document.querySelector<HTMLButtonElement>('#logout-button')!.addEventListener('click', () => logout());
-  renderScanView(document.querySelector<HTMLElement>('#view')!);
+  renderSearchView(document.querySelector<HTMLElement>('#view')!);
 }
 
 watchAuthState((user) => {
