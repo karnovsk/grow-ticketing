@@ -1,11 +1,21 @@
 import { Ticket } from './types';
 import { EmailSettings, getEmailSettings } from './settings';
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 export function buildTicketEmailHtml(ticket: Ticket, qrDataUri: string, settings: EmailSettings): string {
-  const itemsHtml = ticket.items.map((item) => `<li>${item.quantity} x ${item.name}</li>`).join('');
+  const itemsHtml = ticket.items
+    .map((item) => `<li>${item.quantity} x ${escapeHtml(item.name)}</li>`)
+    .join('');
   return `
     <div>
-      <p>Hi ${ticket.customerName}, ${settings.greeting}</p>
+      <p>Hi ${escapeHtml(ticket.customerName)}, ${settings.greeting}</p>
       <p>${settings.qrInstructions}</p>
       <img src="${qrDataUri}" alt="Pickup QR code" width="300" height="300" />
       <p>${settings.itemsLabel}</p>

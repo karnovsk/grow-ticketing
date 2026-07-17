@@ -43,6 +43,21 @@ describe('buildTicketEmailHtml', () => {
     expect(html).toContain('data:image/png;base64,ABC');
     expect(html).toContain('2 x Widget');
   });
+
+  test('escapes HTML in customer name and item names', () => {
+    const html = buildTicketEmailHtml(
+      {
+        ...sampleTicket,
+        customerName: '<script>alert(1)</script>',
+        items: [{ name: 'Widget <b>&</b>', quantity: 1 }],
+      },
+      'data:image/png;base64,ABC',
+      sampleSettings,
+    );
+    expect(html).not.toContain('<script>');
+    expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+    expect(html).toContain('Widget &lt;b&gt;&amp;&lt;/b&gt;');
+  });
 });
 
 describe('sendTicketEmail', () => {
