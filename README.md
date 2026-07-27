@@ -2,36 +2,120 @@
 
 Issues an emailed QR-code pickup ticket when a Grow purchase webhook fires, and lets staff validate tickets at the delivery point. See `docs/superpowers/specs/2026-07-17-grow-ticketing-design.md` for the full design.
 
-## One-time setup
+## Setup and workflow
 
-1. Create a Firebase project in the [Firebase console](https://console.firebase.google.com/), enabling Firestore, Authentication (Email/Password provider), Hosting, and Functions (Blaze plan required for outbound network calls from Cloud Functions, e.g. to Resend).
-2. Run `firebase use --add` from the repo root and select the new project, replacing the placeholder in `.firebaserc`.
-3. Create a [Resend](https://resend.com) account (or another transactional email provider) and get an API key; free tier covers this project's expected volume (100–1,000 emails/month). Verify a sending domain/address with your provider — Resend (and most providers) will reject sends from an unverified `from` address.
-4. Contact Grow support (per `https://developers.grow.business/docs/webhooks`) to enable webhooks for your account and get your webhook URL registered. **Ask them directly what the `webhookKey` field in their webhook payloads represents and whether any other request-authenticity mechanism exists** (signature header, IP allowlist) — this project's webhook check assumes `webhookKey` is a static shared secret, which Grow's docs do not explicitly confirm.
-5. Set the two required secrets:
+### 1. Create and select the Firebase project
+
+1. Create a Firebase project in the [Firebase console](https://console.firebase.google.com/).
+2. Enable, in that project: **Firestore Database** (production mode), **Authentication** (Email/Password provider), **Hosting**, and **Functions**.
+3. Upgrade to the **Blaze (pay-as-you-go) plan** — Cloud Functions on the free Spark plan cannot make outbound network calls (needed to reach Gmail's SMTP servers or Resend's API), and Secret Manager (used for secrets below) also requires Blaze. If you skip this, `firebase functions:secrets:set` fails with an explicit error telling you to upgrade, linking straight to the upgrade page. Blaze still has a generous free tier; at the volume this project is designed for (100–1,000 tickets/month), you'll likely stay near $0.
+4. Install project dependencies, which is also where the local Firebase CLI comes from — this repo does not require a global `firebase-tools` install:
    ```bash
-   firebase functions:secrets:set GROW_WEBHOOK_KEY
-   firebase functions:secrets:set RESEND_API_KEY
+   npm --prefix functions install
+   npm --prefix web install
    ```
-6. Create at least one staff account in Firebase console → Authentication → Users → Add user (email + password). Repeat per staff member — there is no public self-signup by design.
-7. Copy `web/.env.example` to `web/.env` and fill in the values from Firebase console → Project settings → General → Your apps → Web app config.
-8. Copy `functions/.env.example` to `functions/.env` and set `TICKET_EMAIL_FROM` to your verified sender address (e.g. `tickets@yourdomain.com`). **This is required** — `sendTicketEmail` throws if it's unset or empty (deliberately: an unverified placeholder sender would otherwise fail silently), so ticket-issuing webhook calls will fail loudly until this is set. Functions v2 loads `.env` automatically, both for `firebase emulators:start` and at deploy time — no redeploy-specific step needed beyond having the file present.
+5. Log in to the Firebase CLI. This opens an interactive browser flow, so it must be run from a real terminal (not through a non-interactive script/agent):
+   ```bash
+   ./functions/node_modules/.bin/firebase login
+   ```
+6. Point the repo at your project. Copy `.firebaserc.example` to `.firebaserc` (gitignored — it's meant to hold your real project ID locally, not get committed), then run:
+   ```bash
+   ./functions/node_modules/.bin/firebase use <your-project-id> --alias default
+   ```
+   (`firebase use --add` also works, but it's an interactive picker — use the explicit form above if running from a script or non-interactive shell.)
 
-## Local development
+   **If you have more than one Firebase project on the account**, double-check `.firebaserc` afterward and re-verify with `firebase use` (no arguments, prints the active project) — it's easy to grab a web app config from the wrong project later (step 8) if similarly-named projects exist, and the app will silently point at the wrong Firestore/Auth instance with no obvious error.
 
-- Functions: `npm --prefix functions install`, then `npm --prefix functions run test:emulator` to run the full test suite against the Firestore emulator.
-- Web app: `npm --prefix web install`, then `npm --prefix web run dev`.
-- Full stack locally: `npm --prefix functions run build && npm --prefix web run build && firebase emulators:start` (serves Functions, Firestore, Auth, and Hosting together). Unlike `firebase deploy`, `emulators:start` does not run the `predeploy` build hooks automatically, so build both first.
+### 2. Set up an email provider
 
-## Deploying
+Pick one:
+
+- **Gmail (default, no domain required)** — use an existing Gmail or Google Workspace account. Enable 2-Step Verification on it, then create an [App Password](https://myaccount.google.com/apppasswords) (Google Account → Security → 2-Step Verification → App passwords). Gmail's free sending cap is 500/day, well above this project's expected volume.
+- **Resend (upgrade path, needs a domain)** — create a [Resend](https://resend.com) account, add and verify a sending domain (DNS records), and create an API key. Use this once you have a domain and want a dedicated sending address instead of a Gmail account. Note: this path is currently dormant in the code — see the "Switching email providers" note at the end of this section.
+
+### 3. Contact Grow support
+
+Per `https://developers.grow.business/docs/webhooks`, ask Grow support to enable webhooks for your account. You won't have the actual webhook URL to give them until after your first deploy (step 6) — it's fine to come back to this after deploying.
+
+**Ask them directly what the `webhookKey` field in their webhook payloads represents and whether any other request-authenticity mechanism exists** (signature header, IP allowlist) — this project's webhook check assumes `webhookKey` is a static shared secret, which Grow's docs do not explicitly confirm.
+
+### 4. Set the required secrets
+
+`GROW_WEBHOOK_KEY` is always needed (pick your own random string — this is what you'll tell Grow to send back as `webhookKey`). Set `GMAIL_APP_PASSWORD` or `RESEND_API_KEY` depending on which provider you picked in step 2. Requires the Blaze upgrade from step 1.
 
 ```bash
-firebase deploy --only functions,firestore:rules,firestore:indexes,hosting
+./functions/node_modules/.bin/firebase functions:secrets:set GROW_WEBHOOK_KEY
+./functions/node_modules/.bin/firebase functions:secrets:set GMAIL_APP_PASSWORD
 ```
 
-`firebase.json` runs `npm --prefix functions run build` and `npm --prefix web run build` automatically as `predeploy` hooks for their respective targets — you don't need to build either manually first, just make sure `npm install` has been run in both `functions/` and `web/` at least once.
+Each command prompts you to type/paste the value on a separate line — **run these directly in your own interactive terminal**, not piped through a script or agent, and never pass the value as a command-line argument. Both leave the secret exposed in shell history or logs, and the command doesn't accept it as an argument anyway (it'll error with "Secret Payload cannot be empty").
 
-After deploying, give Grow support the deployed `growWebhook` URL (visible in the Firebase console under Functions, or in the CLI output after deploy) to complete their webhook configuration.
+Alternative: these secrets live in Google Cloud Secret Manager under the hood, so you can also create/update them via **[console.cloud.google.com/security/secret-manager](https://console.cloud.google.com/security/secret-manager)** (select your project, Create Secret, name it exactly `GROW_WEBHOOK_KEY` or `GMAIL_APP_PASSWORD`) if you prefer a UI over the CLI prompt.
+
+### 5. Create staff accounts
+
+Firebase console → **Authentication → Users → Add user** (email + password). Repeat per staff member — there is no public self-signup by design.
+
+### 6. Configure and deploy the backend
+
+Copy `functions/.env.example` to `functions/.env` and set `EMAIL_PROVIDER` plus the fields for whichever provider you're using:
+- Gmail: `EMAIL_PROVIDER=gmail` and `GMAIL_USER=<the Gmail address the App Password belongs to>`.
+- Resend: `EMAIL_PROVIDER=resend` and `TICKET_EMAIL_FROM=<your verified sender address>`.
+
+**This is required** — `sendTicketEmail` throws if the active provider's config is unset or empty (deliberately: an unconfigured sender would otherwise fail silently), so ticket-issuing webhook calls will fail loudly until this is set. Functions v2 loads `.env` automatically, both for `firebase emulators:start` and at deploy time — no redeploy-specific step needed beyond having the file present.
+
+Deploy just the backend for now — the frontend isn't configured yet (step 7), and `firebase.json`'s `predeploy` hook builds `web/` with whatever `web/.env` exists at deploy time, so deploying Hosting before step 7 would ship a build with no Firebase config baked in:
+
+```bash
+./functions/node_modules/.bin/firebase deploy --only functions,firestore:rules,firestore:indexes
+```
+
+Come back to step 3 with the resulting webhook URL.
+
+### 7. Register a Firebase web app, configure, and deploy the frontend
+
+1. Firebase console → **Project settings** (gear icon) → **General** tab → scroll to **Your apps**.
+2. Click the `</>` (web) icon to register a new web app. Give it any nickname; you don't need to set up Hosting in that wizard (it's already configured via `firebase.json`).
+3. Copy the `firebaseConfig` object it shows you (`apiKey`, `authDomain`, `projectId`, `storageBucket`, `messagingSenderId`, `appId`).
+4. Copy `web/.env.example` to `web/.env` and fill in the six `VITE_FIREBASE_*` values from that config. **Double-check `VITE_FIREBASE_PROJECT_ID` matches your actual project ID exactly** — see the warning in step 1 about similarly-named projects.
+5. Run the app locally and confirm it works before deploying (see step 8 for the command). Log in with a staff account from step 5 and confirm you land in the app (scan/search/dashboard nav) rather than an error or blank screen.
+6. Deploy the frontend now that `web/.env` is in place:
+   ```bash
+   ./functions/node_modules/.bin/firebase deploy --only hosting
+   ```
+   From here on, use the combined command in step 9 for any future changes to functions and/or the web app together.
+
+### 8. Local development workflow
+
+Day-to-day commands for working on the codebase, once the one-time setup above is done:
+
+- **Run the automated test suite**: `npm --prefix functions run test:emulator` (Jest against the Firestore emulator; doesn't touch your real Firebase project or require any setup beyond step 1.4).
+- **Run the web app against your live Firebase project**: `npm --prefix web run dev` (same command used to verify in step 7.5).
+- **Run the full stack locally against the emulators only** (Functions, Firestore, Auth, and Hosting, without touching the live project):
+  ```bash
+  npm --prefix functions run build && npm --prefix web run build && ./functions/node_modules/.bin/firebase emulators:start
+  ```
+  Unlike `firebase deploy`, `emulators:start` does not run the `predeploy` build hooks automatically, so build both first.
+
+### 9. Deploying updates
+
+For any future change to functions and/or the web app together:
+
+```bash
+./functions/node_modules/.bin/firebase deploy --only functions,firestore:rules,firestore:indexes,hosting
+```
+
+`firebase.json` runs `npm --prefix functions run build` and `npm --prefix web run build` automatically as `predeploy` hooks for their respective targets — you don't need to build either manually first, just make sure `npm install` has been run in both `functions/` and `web/` at least once (step 1.4).
+
+### Switching email providers
+
+Only one provider's secret is wired up at a time. Right now `functions/src/secrets.ts` only declares `GROW_WEBHOOK_KEY` and `GMAIL_APP_PASSWORD` — the `RESEND_API_KEY` declaration was deliberately removed because Firebase's deploy step prompts for a value for *every* `defineSecret()` found in the built codebase, even ones no function actually uses; leaving an unused declaration in place blocks deploys with an empty-value prompt.
+
+To switch to Resend later:
+1. Add back `export const resendApiKeySecret = defineSecret('RESEND_API_KEY');` to `functions/src/secrets.ts`.
+2. Bind it in `functions/src/index.ts`'s `secrets` arrays for `growWebhook` and `resendTicketEmailCallable` (in place of, or alongside, `gmailAppPasswordSecret`).
+3. Set `functions/.env`'s `EMAIL_PROVIDER=resend` and `TICKET_EMAIL_FROM`.
+4. Run `firebase functions:secrets:set RESEND_API_KEY` and redeploy.
 
 ## Customizing the ticket email's wording
 

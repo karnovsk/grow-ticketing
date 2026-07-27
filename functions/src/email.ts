@@ -1,3 +1,4 @@
+import nodemailer from 'nodemailer';
 import { Ticket } from './types';
 import { EmailSettings, getEmailSettings } from './settings';
 
@@ -24,7 +25,7 @@ export function buildTicketEmailHtml(ticket: Ticket, qrDataUri: string, settings
   `;
 }
 
-export async function sendTicketEmail(ticket: Ticket, qrDataUri: string): Promise<boolean> {
+async function sendViaResend(ticket: Ticket, qrDataUri: string): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     throw new Error('RESEND_API_KEY is not configured');
@@ -48,4 +49,38 @@ export async function sendTicketEmail(ticket: Ticket, qrDataUri: string): Promis
     }),
   });
   return response.ok;
+}
+
+async function sendViaGmail(ticket: Ticket, qrDataUri: string): Promise<boolean> {
+  const user = process.env.GMAIL_USER;
+  if (!user) {
+    throw new Error('GMAIL_USER is not configured');
+  }
+  const appPassword = process.env.GMAIL_APP_PASSWORD;
+  if (!appPassword) {
+    throw new Error('GMAIL_APP_PASSWORD is not configured');
+  }
+  const settings = await getEmailSettings();
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user, pass: appPassword },
+  });
+  try {
+    await transporter.sendMail({
+      from: user,
+      to: ticket.customerEmail,
+      subject: settings.subject,
+      html: buildTicketEmailHtml(ticket, qrDataUri, settings),
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function sendTicketEmail(ticket: Ticket, qrDataUri: string): Promise<boolean> {
+  if (process.env.EMAIL_PROVIDER === 'gmail') {
+    return sendViaGmail(ticket, qrDataUri);
+  }
+  return sendViaResend(ticket, qrDataUri);
 }

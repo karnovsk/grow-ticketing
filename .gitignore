@@ -6,3 +6,6 @@ dist/
 !.env.example
 firestore-debug.log
 ui-debug.log
+.firebase/
+.firebaserc
+!.firebaserc.example
