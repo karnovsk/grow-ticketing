@@ -2,14 +2,17 @@ import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from './firebaseClient';
 import { resendTicketEmail } from './ticketApi';
 import { formatItemList, formatTimestamp } from './format';
+import { t } from './i18n';
 
 export async function renderDashboardView(container: HTMLElement) {
   container.innerHTML = `
-    <select id="status-filter">
-      <option value="issued">Issued</option>
-      <option value="validated">Validated</option>
-    </select>
-    <ul id="ticket-list"></ul>
+    <div class="search-controls">
+      <select id="status-filter">
+        <option value="issued">${t('statusIssued')}</option>
+        <option value="validated">${t('statusValidated')}</option>
+      </select>
+    </div>
+    <ul id="ticket-list" class="ticket-list"></ul>
   `;
   const statusFilter = container.querySelector<HTMLSelectElement>('#status-filter')!;
   const list = container.querySelector<HTMLUListElement>('#ticket-list')!;
@@ -28,17 +31,20 @@ export async function renderDashboardView(container: HTMLElement) {
       };
       const li = document.createElement('li');
       const summary = document.createElement('span');
-      const validatedText = data.validatedAt ? ` (validated ${formatTimestamp(data.validatedAt.seconds)})` : '';
+      const validatedText = data.validatedAt
+        ? ` ${t('dashboardValidatedAt', { time: formatTimestamp(data.validatedAt.seconds) })}`
+        : '';
       summary.textContent = `${data.customerName} — ${formatItemList(data.items)}${validatedText}`;
       li.appendChild(summary);
 
       if (data.emailStatus === 'failed') {
         const resendButton = document.createElement('button');
-        resendButton.textContent = 'Resend email';
+        resendButton.className = 'btn btn-secondary';
+        resendButton.textContent = t('dashboardResendButton');
         resendButton.addEventListener('click', async () => {
           resendButton.disabled = true;
           const result = (await resendTicketEmail(ticketId)) as { sent: boolean };
-          resendButton.textContent = result.sent ? 'Email resent' : 'Resend failed — try again';
+          resendButton.textContent = result.sent ? t('dashboardResendSuccess') : t('dashboardResendFailure');
           resendButton.disabled = result.sent;
         });
         li.appendChild(resendButton);
