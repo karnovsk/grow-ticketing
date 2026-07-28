@@ -72,6 +72,8 @@ export function renderScanView(container: HTMLElement): ScanViewHandle {
 
     if (state.phase === 'scanning') {
       resultEl.innerHTML = '';
+    } else if (state.phase === 'cameraError') {
+      renderCard('card-error', t('scanCameraError'), []);
     } else if (state.phase === 'lookupError') {
       renderCard('card-error', t('scanLookupError'), [
         button(t('scanRetryButton'), () => lastScannedId && lookUp(lastScannedId)),
@@ -130,8 +132,17 @@ export function renderScanView(container: HTMLElement): ScanViewHandle {
       const outcome = (await validateTicket(ticket.ticketId)) as { ok: boolean; reason?: string };
       const nextPhase = resolveConfirmOutcome(outcome);
       if (nextPhase === 'resultAlreadyValidated') {
-        const fresh = await getTicketById(ticket.ticketId);
-        state = { phase: 'resultAlreadyValidated', ticket: fresh ?? ticket };
+        // Deliberately reuse the ticket already in scope (from the preceding
+        // preview lookup) rather than refetching. The validateTicket callable
+        // does return a `ticket` field on this branch, but its validatedAt
+        // comes from the Admin SDK's Timestamp serialized over the wire as
+        // `{ _seconds, _nanoseconds }` — not the `{ seconds }` shape TicketRecord
+        // (and formatTimestamp) expect from client-side Firestore reads. Trusting
+        // it would silently produce garbage, and a second Firestore read here
+        // is both wasted work (this branch's card only shows the title, no
+        // detail) and risky (a transient failure would turn an already-known
+        // outcome into a false "lookupError").
+        state = { phase: 'resultAlreadyValidated', ticket };
       } else if (nextPhase === 'result') {
         state = { phase: 'result', ticket };
       } else {
@@ -159,7 +170,8 @@ export function renderScanView(container: HTMLElement): ScanViewHandle {
       },
     )
     .catch(() => {
-      resultEl.innerHTML = `<div class="card card-error"><p>${t('scanCameraError')}</p></div>`;
+      state = { phase: 'cameraError' };
+      render();
     });
 
   return {

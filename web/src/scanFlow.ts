@@ -2,6 +2,7 @@ import { TicketRecord } from './ticketApi';
 
 export type ScanState =
   | { phase: 'scanning' }
+  | { phase: 'cameraError' }
   | { phase: 'lookupError' }
   | { phase: 'previewNotFound' }
   | { phase: 'preview'; ticket: TicketRecord }
