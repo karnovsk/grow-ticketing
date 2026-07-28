@@ -1,26 +1,34 @@
 import { searchTicketsByField, validateTicket, TicketRecord } from './ticketApi';
 import { formatItemList } from './format';
+import { t } from './i18n';
 
 export function renderSearchView(container: HTMLElement) {
   container.innerHTML = `
-    <select id="search-field">
-      <option value="customerName">Name</option>
-      <option value="customerPhone">Phone</option>
-      <option value="transactionCode">Transaction code</option>
-    </select>
-    <input id="search-value" placeholder="Search value" />
-    <button id="search-button">Search</button>
-    <ul id="search-results"></ul>
+    <div class="search-controls">
+      <select id="search-field">
+        <option value="customerName">${t('searchFieldName')}</option>
+        <option value="customerPhone">${t('searchFieldPhone')}</option>
+        <option value="transactionCode">${t('searchFieldTransaction')}</option>
+      </select>
+      <input id="search-value" placeholder="${t('searchValuePlaceholder')}" />
+      <button id="search-button" class="btn btn-primary">${t('searchButton')}</button>
+    </div>
+    <ul id="search-results" class="ticket-list"></ul>
   `;
 
   const fieldSelect = container.querySelector<HTMLSelectElement>('#search-field')!;
   const valueInput = container.querySelector<HTMLInputElement>('#search-value')!;
   const resultsList = container.querySelector<HTMLUListElement>('#search-results')!;
 
-  container.querySelector<HTMLButtonElement>('#search-button')!.addEventListener('click', async () => {
+  async function runSearch() {
     const field = fieldSelect.value as 'customerName' | 'customerPhone' | 'transactionCode';
     const results = await searchTicketsByField(field, valueInput.value);
     renderResults(results);
+  }
+
+  container.querySelector<HTMLButtonElement>('#search-button')!.addEventListener('click', runSearch);
+  valueInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') runSearch();
   });
 
   function renderResults(results: TicketRecord[]) {
@@ -28,14 +36,19 @@ export function renderSearchView(container: HTMLElement) {
     for (const ticket of results) {
       const li = document.createElement('li');
       const summary = document.createElement('span');
-      summary.textContent = `${ticket.customerName} — ${formatItemList(ticket.items)} — ${ticket.status}`;
+      summary.textContent = `${ticket.customerName} — ${formatItemList(ticket.items)} `;
+      const pill = document.createElement('span');
+      pill.className = `pill ${ticket.status === 'validated' ? 'pill-validated' : 'pill-issued'}`;
+      pill.textContent = t(ticket.status === 'validated' ? 'statusValidated' : 'statusIssued');
+      summary.appendChild(pill);
       li.appendChild(summary);
 
       if (ticket.status === 'issued') {
         const noteInput = document.createElement('input');
-        noteInput.placeholder = 'Verification note (e.g. verified via ID)';
+        noteInput.placeholder = t('searchNotePlaceholder');
         const confirmButton = document.createElement('button');
-        confirmButton.textContent = 'Validate manually';
+        confirmButton.className = 'btn btn-primary';
+        confirmButton.textContent = t('searchValidateButton');
         confirmButton.addEventListener('click', async () => {
           try {
             const result = (await validateTicket(ticket.ticketId, noteInput.value)) as {
@@ -43,20 +56,20 @@ export function renderSearchView(container: HTMLElement) {
               reason?: string;
             };
             if (result.ok) {
-              summary.textContent += ' — validated';
+              summary.append(t('searchValidatedSuffix'));
               noteInput.remove();
               confirmButton.remove();
             } else if (result.reason === 'already_validated') {
-              summary.textContent += ' — already picked up (validated by someone else just now)';
+              summary.append(t('searchAlreadyPickedUpSuffix'));
               noteInput.remove();
               confirmButton.remove();
             } else {
-              summary.textContent += ' — ticket not found';
+              summary.append(t('searchNotFoundSuffix'));
               noteInput.remove();
               confirmButton.remove();
             }
           } catch {
-            summary.textContent += ' — something went wrong, please try again';
+            summary.append(t('searchErrorSuffix'));
           }
         });
         li.appendChild(noteInput);
