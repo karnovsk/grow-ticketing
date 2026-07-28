@@ -56,6 +56,8 @@ export function renderSearchView(container: HTMLElement) {
               reason?: string;
             };
             if (result.ok) {
+              pill.className = 'pill pill-validated';
+              pill.textContent = t('statusValidated');
               summary.append(t('searchValidatedSuffix'));
               noteInput.remove();
               confirmButton.remove();
