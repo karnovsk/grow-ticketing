@@ -1,5 +1,5 @@
 import { httpsCallable } from 'firebase/functions';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { functions, db } from './firebaseClient';
 
 export interface TicketRecord {
@@ -32,4 +32,9 @@ export async function searchTicketsByField(
   const q = query(collection(db, 'tickets'), where(field, '==', value));
   const snap = await getDocs(q);
   return snap.docs.map((doc) => doc.data() as TicketRecord);
+}
+
+export async function getTicketById(ticketId: string): Promise<TicketRecord | null> {
+  const snap = await getDoc(doc(db, 'tickets', ticketId));
+  return snap.exists() ? (snap.data() as TicketRecord) : null;
 }
