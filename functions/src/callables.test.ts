@@ -1,5 +1,5 @@
 import { createTicketIfNew } from './ticketService';
-import { handleValidateTicket, handleResendTicketEmail } from './callables';
+import { handleValidateTicket, handleResendTicketEmail, handleInvalidateTicket } from './callables';
 import { sendTicketEmail } from './email';
 import { clearFirestoreEmulator } from './testHelpers';
 
@@ -49,6 +49,42 @@ describe('handleValidateTicket', () => {
     const result = await handleValidateTicket({ ticketId: ticket.ticketId }, { uid: 'staff-2', email: 'staff2@example.com' });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toBe('already_validated');
+  });
+});
+
+describe('handleInvalidateTicket', () => {
+  afterEach(async () => {
+    await clearFirestoreEmulator(PROJECT_ID);
+  });
+
+  test('reverts a validated ticket to issued for an authenticated caller', async () => {
+    const { ticket } = await createTicketIfNew({ ...sampleInput, transactionCode: 'TX-220' });
+    await handleValidateTicket({ ticketId: ticket.ticketId }, { uid: 'staff-1', email: 'staff1@example.com' });
+    const result = await handleInvalidateTicket({ ticketId: ticket.ticketId }, { uid: 'staff-2', email: 'staff2@example.com' });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.ticket.status).toBe('issued');
+      expect(result.ticket.validatedByEmail).toBeNull();
+      expect(result.ticket.validationNote).toMatch(/Invalidated .* by staff2@example\.com/);
+    }
+  });
+
+  test('throws unauthenticated when auth is missing', async () => {
+    const { ticket } = await createTicketIfNew({ ...sampleInput, transactionCode: 'TX-221' });
+    await expect(handleInvalidateTicket({ ticketId: ticket.ticketId }, undefined)).rejects.toThrow('unauthenticated');
+  });
+
+  test('returns not_validated without throwing for a ticket that is still issued', async () => {
+    const { ticket } = await createTicketIfNew({ ...sampleInput, transactionCode: 'TX-222' });
+    const result = await handleInvalidateTicket({ ticketId: ticket.ticketId }, { uid: 'staff-1', email: 'staff1@example.com' });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe('not_validated');
+  });
+
+  test('returns not_found without throwing for an unknown id', async () => {
+    const result = await handleInvalidateTicket({ ticketId: 'nope' }, { uid: 'staff-1', email: 'staff1@example.com' });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe('not_found');
   });
 });
 

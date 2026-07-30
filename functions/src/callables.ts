@@ -1,4 +1,4 @@
-import { validateTicket, getTicketById, updateEmailStatus } from './ticketService';
+import { validateTicket, invalidateTicket, getTicketById, updateEmailStatus } from './ticketService';
 import { sendTicketEmail } from './email';
 import { generateQrDataUri } from './qr';
 
@@ -8,6 +8,7 @@ export interface CallableAuth {
 }
 
 export type ValidateTicketData = { ticketId: string; note?: string };
+export type InvalidateTicketData = { ticketId: string };
 export type ResendEmailData = { ticketId: string };
 
 export async function handleValidateTicket(data: ValidateTicketData, auth: CallableAuth | undefined) {
@@ -19,6 +20,13 @@ export async function handleValidateTicket(data: ValidateTicketData, auth: Calla
   // return it as-is so callers can branch on `ok`/`reason` without needing
   // to catch a thrown error for an expected, everyday outcome.
   return validateTicket(data.ticketId, auth.uid, auth.email, data.note ?? null);
+}
+
+export async function handleInvalidateTicket(data: InvalidateTicketData, auth: CallableAuth | undefined) {
+  if (!auth) {
+    throw new Error('unauthenticated');
+  }
+  return invalidateTicket(data.ticketId, auth.uid, auth.email);
 }
 
 export async function handleResendTicketEmail(data: ResendEmailData, auth: CallableAuth | undefined) {
