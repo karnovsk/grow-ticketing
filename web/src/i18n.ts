@@ -43,7 +43,23 @@ export type TranslationKey =
   | 'dashboardValidatedBy'
   | 'dashboardResendButton'
   | 'dashboardResendSuccess'
-  | 'dashboardResendFailure';
+  | 'dashboardResendFailure'
+  | 'dashboardDetailClose'
+  | 'dashboardDetailTicketId'
+  | 'dashboardDetailCustomerEmail'
+  | 'dashboardDetailCustomerPhone'
+  | 'dashboardDetailTransactionCode'
+  | 'dashboardDetailPaymentSum'
+  | 'dashboardDetailIssuedAt'
+  | 'dashboardDetailValidatedAt'
+  | 'dashboardDetailValidatedBy'
+  | 'dashboardDetailValidationNote'
+  | 'dashboardDetailEmailStatus'
+  | 'dashboardDetailEmailStatusSent'
+  | 'dashboardDetailEmailStatusFailed'
+  | 'dashboardDetailInvalidateButton'
+  | 'dashboardDetailInvalidateConfirm'
+  | 'dashboardDetailInvalidateCancel';
 
 export const translations: Record<Lang, Record<TranslationKey, string>> = {
   en: {
@@ -90,6 +106,22 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     dashboardResendButton: 'Resend email',
     dashboardResendSuccess: 'Email resent',
     dashboardResendFailure: 'Resend failed — try again',
+    dashboardDetailClose: 'Close',
+    dashboardDetailTicketId: 'Ticket ID: {{value}}',
+    dashboardDetailCustomerEmail: 'Email: {{value}}',
+    dashboardDetailCustomerPhone: 'Phone: {{value}}',
+    dashboardDetailTransactionCode: 'Transaction code: {{value}}',
+    dashboardDetailPaymentSum: 'Payment: {{value}}',
+    dashboardDetailIssuedAt: 'Issued: {{value}}',
+    dashboardDetailValidatedAt: 'Validated at: {{value}}',
+    dashboardDetailValidatedBy: 'Validated by: {{value}}',
+    dashboardDetailValidationNote: 'Note: {{value}}',
+    dashboardDetailEmailStatus: 'Confirmation email: {{value}}',
+    dashboardDetailEmailStatusSent: 'Sent',
+    dashboardDetailEmailStatusFailed: 'Failed',
+    dashboardDetailInvalidateButton: 'Invalidate ticket',
+    dashboardDetailInvalidateConfirm: 'Confirm invalidate',
+    dashboardDetailInvalidateCancel: 'Cancel',
   },
   he: {
     appTitle: 'כרטיסי Grow – צוות',
@@ -135,6 +167,22 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     dashboardResendButton: 'שליחה חוזרת של האימייל',
     dashboardResendSuccess: 'האימייל נשלח מחדש',
     dashboardResendFailure: 'השליחה נכשלה — נסו שוב',
+    dashboardDetailClose: 'סגירה',
+    dashboardDetailTicketId: 'מזהה כרטיס: {{value}}',
+    dashboardDetailCustomerEmail: 'אימייל: {{value}}',
+    dashboardDetailCustomerPhone: 'טלפון: {{value}}',
+    dashboardDetailTransactionCode: 'קוד עסקה: {{value}}',
+    dashboardDetailPaymentSum: 'תשלום: {{value}}',
+    dashboardDetailIssuedAt: 'הונפק ב-{{value}}',
+    dashboardDetailValidatedAt: 'אושר ב-{{value}}',
+    dashboardDetailValidatedBy: 'אושר על ידי: {{value}}',
+    dashboardDetailValidationNote: 'הערה: {{value}}',
+    dashboardDetailEmailStatus: 'אימייל אישור: {{value}}',
+    dashboardDetailEmailStatusSent: 'נשלח',
+    dashboardDetailEmailStatusFailed: 'נכשל',
+    dashboardDetailInvalidateButton: 'ביטול אישור מסירה',
+    dashboardDetailInvalidateConfirm: 'אישור הביטול',
+    dashboardDetailInvalidateCancel: 'חזרה',
   },
 };
 

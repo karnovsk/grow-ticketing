@@ -6,12 +6,17 @@ const issuedTicket: TicketRecord = {
   ticketId: 't1',
   status: 'issued',
   customerName: 'Dana Levi',
+  customerEmail: 'dana@example.com',
   customerPhone: null,
   transactionCode: 'tx1',
   items: [{ name: 'Widget', quantity: 1 }],
+  paymentSum: 50,
+  issuedAt: { seconds: 0 },
   validatedAt: null,
   validatedBy: null,
   validatedByEmail: null,
+  validationNote: null,
+  emailStatus: 'sent',
 };
 
 const validatedTicket: TicketRecord = { ...issuedTicket, status: 'validated' };
