@@ -214,6 +214,13 @@ select {
   white-space: pre-wrap;
 }
 
+.modal-email-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
 .pill {
   display: inline-block;
   padding: 0.2rem 0.6rem;
@@ -269,11 +276,15 @@ select {
 #ticket-list li {
   flex-direction: row;
   align-items: center;
-  justify-content: space-between;
   gap: 0.75rem;
 }
 
 .ticket-summary {
+  /* Grows to fill all leftover row width itself, so the badges/date after it
+     always sit at the same edge regardless of how long the customer name is
+     — without this they'd shift left/right per row as summary shrunk to fit
+     its own content instead of claiming the remaining space. */
+  flex: 1 1 auto;
   font-size: 0.85rem;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -293,6 +304,30 @@ select {
 .status-dot.filled {
   background: var(--color-success);
   border-color: var(--color-success);
+}
+
+.status-dot.email-failed {
+  border-color: var(--color-error);
+}
+
+.qty-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 6px;
+  border: 1px solid #d6d3d1;
+  background: var(--color-bg);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.ticket-date {
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  color: var(--color-muted);
 }
 
 .search-controls {

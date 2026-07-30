@@ -1,7 +1,7 @@
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from './firebaseClient';
 import { resendTicketEmail, validateTicket, invalidateTicket, TicketRecord } from './ticketApi';
-import { formatItemList, formatTimestamp } from './format';
+import { formatItemList, formatTimestamp, formatDateShort } from './format';
 import { fuzzyMatch } from './fuzzyMatch';
 import { t } from './i18n';
 
@@ -54,7 +54,13 @@ export async function renderDashboardView(container: HTMLElement) {
     const li = document.createElement('li');
 
     const dot = document.createElement('span');
-    dot.className = `status-dot${ticket.status === 'validated' ? ' filled' : ''}`;
+    let dotClass = 'status-dot';
+    if (ticket.status === 'validated') {
+      dotClass += ' filled';
+    } else if (ticket.emailStatus === 'failed') {
+      dotClass += ' email-failed';
+    }
+    dot.className = dotClass;
     li.appendChild(dot);
 
     const summary = document.createElement('span');
@@ -68,27 +74,20 @@ export async function renderDashboardView(container: HTMLElement) {
           })}`
         : ` ${t('dashboardValidatedAt', { time: formatTimestamp(ticket.validatedAt.seconds) })}`;
     }
-    summary.textContent = `${ticket.customerName} — ${formatItemList(ticket.items)}${validatedText}`;
+    summary.textContent = `${ticket.customerName}${validatedText}`;
     li.appendChild(summary);
 
-    if (ticket.emailStatus === 'failed') {
-      const resendButton = document.createElement('button');
-      resendButton.className = 'btn btn-secondary btn-small';
-      resendButton.textContent = t('dashboardResendButton');
-      resendButton.addEventListener('click', async (event) => {
-        event.stopPropagation();
-        resendButton.disabled = true;
-        const result = (await resendTicketEmail(ticket.ticketId)) as { sent: boolean };
-        resendButton.textContent = result.sent ? t('dashboardResendSuccess') : t('dashboardResendFailure');
-        resendButton.disabled = result.sent;
-      });
-      // A native button also dispatches a bubbling `keydown` before the
-      // synthetic click it generates for Enter/Space — without stopping
-      // that too, activating this button via keyboard would still bubble
-      // up and trigger the row's own Enter/Space handler below.
-      resendButton.addEventListener('keydown', (event) => event.stopPropagation());
-      li.appendChild(resendButton);
-    }
+    ticket.items.forEach((item) => {
+      const badge = document.createElement('span');
+      badge.className = 'qty-badge';
+      badge.textContent = String(item.quantity);
+      li.appendChild(badge);
+    });
+
+    const date = document.createElement('span');
+    date.className = 'ticket-date';
+    date.textContent = formatDateShort(ticket.issuedAt.seconds);
+    li.appendChild(date);
 
     li.tabIndex = 0;
     li.setAttribute('role', 'button');
@@ -116,6 +115,35 @@ function fieldRow(text: string): HTMLParagraphElement {
   const p = document.createElement('p');
   p.textContent = text;
   return p;
+}
+
+function renderEmailStatusRow(ticket: TicketRecord): HTMLParagraphElement {
+  const row = document.createElement('p');
+  row.className = 'modal-email-status';
+  const label = document.createElement('span');
+  label.textContent = t('dashboardDetailEmailStatus', {
+    value: t(ticket.emailStatus === 'sent' ? 'dashboardDetailEmailStatusSent' : 'dashboardDetailEmailStatusFailed'),
+  });
+  row.appendChild(label);
+
+  if (ticket.emailStatus === 'failed') {
+    const resendButton = document.createElement('button');
+    resendButton.type = 'button';
+    resendButton.className = 'btn btn-secondary btn-small';
+    resendButton.textContent = t('dashboardResendButton');
+    resendButton.addEventListener('click', async () => {
+      resendButton.disabled = true;
+      const result = (await resendTicketEmail(ticket.ticketId)) as { sent: boolean };
+      label.textContent = t('dashboardDetailEmailStatus', {
+        value: t(result.sent ? 'dashboardDetailEmailStatusSent' : 'dashboardDetailEmailStatusFailed'),
+      });
+      resendButton.textContent = result.sent ? t('dashboardResendSuccess') : t('dashboardResendFailure');
+      resendButton.disabled = result.sent;
+    });
+    row.appendChild(resendButton);
+  }
+
+  return row;
 }
 
 function renderDetailModal(container: HTMLElement, ticket: TicketRecord, onChanged: () => void) {
@@ -160,13 +188,7 @@ function renderDetailModal(container: HTMLElement, ticket: TicketRecord, onChang
   const noteRow = fieldRow(t('dashboardDetailValidationNote', { value: ticket.validationNote ?? NONE }));
   noteRow.className = 'modal-note';
   modal.appendChild(noteRow);
-  modal.appendChild(
-    fieldRow(
-      t('dashboardDetailEmailStatus', {
-        value: t(ticket.emailStatus === 'sent' ? 'dashboardDetailEmailStatusSent' : 'dashboardDetailEmailStatusFailed'),
-      }),
-    ),
-  );
+  modal.appendChild(renderEmailStatusRow(ticket));
 
   const actions = document.createElement('div');
   actions.className = 'actions';
