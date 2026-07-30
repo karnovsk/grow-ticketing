@@ -273,12 +273,26 @@ select {
   gap: 0.75rem;
 }
 
-#ticket-list li span {
+.ticket-summary {
   font-size: 0.85rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
+}
+
+.status-dot {
+  flex-shrink: 0;
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--color-primary);
+}
+
+.status-dot.filled {
+  background: var(--color-success);
+  border-color: var(--color-success);
 }
 
 .search-controls {

@@ -2,9 +2,11 @@ import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from './firebaseClient';
 import { resendTicketEmail, validateTicket, invalidateTicket, TicketRecord } from './ticketApi';
 import { formatItemList, formatTimestamp } from './format';
+import { fuzzyMatch } from './fuzzyMatch';
 import { t } from './i18n';
 
 const NONE = '—';
+const FILTER_DEBOUNCE_MS = 150;
 
 export async function renderDashboardView(container: HTMLElement) {
   container.innerHTML = `
@@ -12,68 +14,101 @@ export async function renderDashboardView(container: HTMLElement) {
       <select id="status-filter">
         <option value="issued">${t('statusIssued')}</option>
         <option value="validated">${t('statusValidated')}</option>
+        <option value="all">${t('statusAll')}</option>
       </select>
+      <input id="ticket-filter" placeholder="${t('dashboardFilterPlaceholder')}" />
     </div>
     <ul id="ticket-list" class="ticket-list"></ul>
   `;
   const statusFilter = container.querySelector<HTMLSelectElement>('#status-filter')!;
+  const ticketFilter = container.querySelector<HTMLInputElement>('#ticket-filter')!;
   const list = container.querySelector<HTMLUListElement>('#ticket-list')!;
 
+  let currentTickets: TicketRecord[] = [];
+  let filterDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
   async function load() {
-    const q = query(collection(db, 'tickets'), where('status', '==', statusFilter.value), orderBy('issuedAt', 'desc'));
+    const constraints =
+      statusFilter.value === 'all'
+        ? [orderBy('issuedAt', 'desc')]
+        : [where('status', '==', statusFilter.value), orderBy('issuedAt', 'desc')];
+    const q = query(collection(db, 'tickets'), ...constraints);
     const snap = await getDocs(q);
+    currentTickets = snap.docs.map((doc) => doc.data() as TicketRecord);
+    renderList();
+  }
+
+  function renderList() {
+    const filterText = ticketFilter.value;
+    const tickets = filterText.trim()
+      ? currentTickets.filter(
+          (ticket) => fuzzyMatch(filterText, [ticket.customerName, ticket.customerEmail, ticket.customerPhone]) !== null,
+        )
+      : currentTickets;
+
     list.innerHTML = '';
-    snap.forEach((doc) => {
-      const ticket = doc.data() as TicketRecord;
-      const li = document.createElement('li');
-      const summary = document.createElement('span');
-      let validatedText = '';
-      if (ticket.validatedAt) {
-        validatedText = ticket.validatedByEmail
-          ? ` ${t('dashboardValidatedBy', {
-              time: formatTimestamp(ticket.validatedAt.seconds),
-              staff: ticket.validatedByEmail,
-            })}`
-          : ` ${t('dashboardValidatedAt', { time: formatTimestamp(ticket.validatedAt.seconds) })}`;
-      }
-      summary.textContent = `${ticket.customerName} — ${formatItemList(ticket.items)}${validatedText}`;
-      li.appendChild(summary);
+    tickets.forEach((ticket) => list.appendChild(renderRow(ticket)));
+  }
 
-      if (ticket.emailStatus === 'failed') {
-        const resendButton = document.createElement('button');
-        resendButton.className = 'btn btn-secondary btn-small';
-        resendButton.textContent = t('dashboardResendButton');
-        resendButton.addEventListener('click', async (event) => {
-          event.stopPropagation();
-          resendButton.disabled = true;
-          const result = (await resendTicketEmail(ticket.ticketId)) as { sent: boolean };
-          resendButton.textContent = result.sent ? t('dashboardResendSuccess') : t('dashboardResendFailure');
-          resendButton.disabled = result.sent;
-        });
-        // A native button also dispatches a bubbling `keydown` before the
-        // synthetic click it generates for Enter/Space — without stopping
-        // that too, activating this button via keyboard would still bubble
-        // up and trigger the row's own Enter/Space handler below.
-        resendButton.addEventListener('keydown', (event) => event.stopPropagation());
-        li.appendChild(resendButton);
-      }
+  function renderRow(ticket: TicketRecord): HTMLLIElement {
+    const li = document.createElement('li');
 
-      li.tabIndex = 0;
-      li.setAttribute('role', 'button');
-      const openDetail = () => renderDetailModal(container, ticket, load);
-      li.addEventListener('click', openDetail);
-      li.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          openDetail();
-        }
+    const dot = document.createElement('span');
+    dot.className = `status-dot${ticket.status === 'validated' ? ' filled' : ''}`;
+    li.appendChild(dot);
+
+    const summary = document.createElement('span');
+    summary.className = 'ticket-summary';
+    let validatedText = '';
+    if (ticket.validatedAt) {
+      validatedText = ticket.validatedByEmail
+        ? ` ${t('dashboardValidatedBy', {
+            time: formatTimestamp(ticket.validatedAt.seconds),
+            staff: ticket.validatedByEmail,
+          })}`
+        : ` ${t('dashboardValidatedAt', { time: formatTimestamp(ticket.validatedAt.seconds) })}`;
+    }
+    summary.textContent = `${ticket.customerName} — ${formatItemList(ticket.items)}${validatedText}`;
+    li.appendChild(summary);
+
+    if (ticket.emailStatus === 'failed') {
+      const resendButton = document.createElement('button');
+      resendButton.className = 'btn btn-secondary btn-small';
+      resendButton.textContent = t('dashboardResendButton');
+      resendButton.addEventListener('click', async (event) => {
+        event.stopPropagation();
+        resendButton.disabled = true;
+        const result = (await resendTicketEmail(ticket.ticketId)) as { sent: boolean };
+        resendButton.textContent = result.sent ? t('dashboardResendSuccess') : t('dashboardResendFailure');
+        resendButton.disabled = result.sent;
       });
+      // A native button also dispatches a bubbling `keydown` before the
+      // synthetic click it generates for Enter/Space — without stopping
+      // that too, activating this button via keyboard would still bubble
+      // up and trigger the row's own Enter/Space handler below.
+      resendButton.addEventListener('keydown', (event) => event.stopPropagation());
+      li.appendChild(resendButton);
+    }
 
-      list.appendChild(li);
+    li.tabIndex = 0;
+    li.setAttribute('role', 'button');
+    const openDetail = () => renderDetailModal(container, ticket, load);
+    li.addEventListener('click', openDetail);
+    li.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openDetail();
+      }
     });
+
+    return li;
   }
 
   statusFilter.addEventListener('change', load);
+  ticketFilter.addEventListener('input', () => {
+    if (filterDebounceTimer) clearTimeout(filterDebounceTimer);
+    filterDebounceTimer = setTimeout(renderList, FILTER_DEBOUNCE_MS);
+  });
   await load();
 }
 

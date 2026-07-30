@@ -39,6 +39,8 @@ export type TranslationKey =
   | 'searchErrorSuffix'
   | 'statusIssued'
   | 'statusValidated'
+  | 'statusAll'
+  | 'dashboardFilterPlaceholder'
   | 'dashboardValidatedAt'
   | 'dashboardValidatedBy'
   | 'dashboardResendButton'
@@ -72,7 +74,7 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     headerLogoutButton: 'Log out',
     navScan: 'Scan',
     navSearch: 'Search',
-    navDashboard: 'Dashboard',
+    navDashboard: 'Tickets',
     noItems: 'No items',
     scanInstruction: 'Point camera at ticket QR',
     scanLookupError: "Couldn't check this ticket. Try again.",
@@ -101,6 +103,8 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     searchErrorSuffix: ' — something went wrong, please try again',
     statusIssued: 'Issued',
     statusValidated: 'Picked up',
+    statusAll: 'All',
+    dashboardFilterPlaceholder: 'Filter by name, email, or phone',
     dashboardValidatedAt: '(validated {{time}})',
     dashboardValidatedBy: '(validated {{time}} by {{staff}})',
     dashboardResendButton: 'Resend email',
@@ -133,7 +137,7 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     headerLogoutButton: 'התנתקות',
     navScan: 'סריקה',
     navSearch: 'חיפוש',
-    navDashboard: 'לוח בקרה',
+    navDashboard: 'כרטיסים',
     noItems: 'אין פריטים',
     scanInstruction: 'כוונו את המצלמה לקוד ה-QR של הכרטיס',
     scanLookupError: 'לא ניתן היה לבדוק את הכרטיס. נסו שוב.',
@@ -162,6 +166,8 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     searchErrorSuffix: ' — משהו השתבש, נסו שוב',
     statusIssued: 'הונפק',
     statusValidated: 'נמסר',
+    statusAll: 'הכל',
+    dashboardFilterPlaceholder: 'סינון לפי שם, אימייל או טלפון',
     dashboardValidatedAt: '(נמסר ב-{{time}})',
     dashboardValidatedBy: '(נמסר ב-{{time}} על ידי {{staff}})',
     dashboardResendButton: 'שליחה חוזרת של האימייל',
