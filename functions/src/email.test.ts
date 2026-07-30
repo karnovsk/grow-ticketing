@@ -29,6 +29,7 @@ const sampleTicket: Ticket = {
   issuedAt: admin.firestore.Timestamp.now(),
   validatedAt: null,
   validatedBy: null,
+  validatedByEmail: null,
   validationNote: null,
   emailStatus: 'failed',
 };

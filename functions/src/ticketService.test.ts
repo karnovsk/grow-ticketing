@@ -72,26 +72,37 @@ describe('ticketService', () => {
 
   test('validateTicket transitions issued to validated', async () => {
     const { ticket } = await createTicketIfNew(sampleInput);
-    const result = await validateTicket(ticket.ticketId, 'staff-uid-1');
+    const result = await validateTicket(ticket.ticketId, 'staff-uid-1', 'staff1@example.com');
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.ticket.status).toBe('validated');
       expect(result.ticket.validatedBy).toBe('staff-uid-1');
+      expect(result.ticket.validatedByEmail).toBe('staff1@example.com');
+    }
+  });
+
+  test('validateTicket stores a null validatedByEmail when the caller has none', async () => {
+    const { ticket } = await createTicketIfNew(sampleInput);
+    const result = await validateTicket(ticket.ticketId, 'staff-uid-1', null);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.ticket.validatedByEmail).toBeNull();
     }
   });
 
   test('validateTicket rejects an already-validated ticket', async () => {
     const { ticket } = await createTicketIfNew(sampleInput);
-    await validateTicket(ticket.ticketId, 'staff-uid-1');
-    const result = await validateTicket(ticket.ticketId, 'staff-uid-2');
+    await validateTicket(ticket.ticketId, 'staff-uid-1', 'staff1@example.com');
+    const result = await validateTicket(ticket.ticketId, 'staff-uid-2', 'staff2@example.com');
     expect(result.ok).toBe(false);
     if (!result.ok && result.reason === 'already_validated') {
       expect(result.ticket.validatedBy).toBe('staff-uid-1');
+      expect(result.ticket.validatedByEmail).toBe('staff1@example.com');
     }
   });
 
   test('validateTicket returns not_found for an unknown id', async () => {
-    const result = await validateTicket('does-not-exist', 'staff-uid-1');
+    const result = await validateTicket('does-not-exist', 'staff-uid-1', 'staff1@example.com');
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toBe('not_found');
   });

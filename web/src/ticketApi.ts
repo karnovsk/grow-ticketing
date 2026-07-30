@@ -11,6 +11,7 @@ export interface TicketRecord {
   items: { name: string; quantity: number }[];
   validatedAt: { seconds: number } | null;
   validatedBy: string | null;
+  validatedByEmail: string | null;
 }
 
 export async function validateTicket(ticketId: string, note?: string) {

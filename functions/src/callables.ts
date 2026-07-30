@@ -4,6 +4,7 @@ import { generateQrDataUri } from './qr';
 
 export interface CallableAuth {
   uid: string;
+  email: string | null;
 }
 
 export type ValidateTicketData = { ticketId: string; note?: string };
@@ -17,7 +18,7 @@ export async function handleValidateTicket(data: ValidateTicketData, auth: Calla
   // return value (not an error) alongside "already validated" and success —
   // return it as-is so callers can branch on `ok`/`reason` without needing
   // to catch a thrown error for an expected, everyday outcome.
-  return validateTicket(data.ticketId, auth.uid, data.note ?? null);
+  return validateTicket(data.ticketId, auth.uid, auth.email, data.note ?? null);
 }
 
 export async function handleResendTicketEmail(data: ResendEmailData, auth: CallableAuth | undefined) {

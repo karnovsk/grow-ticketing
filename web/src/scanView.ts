@@ -20,6 +20,7 @@ export function renderScanView(container: HTMLElement): ScanViewHandle {
     <p id="scan-instruction" class="scan-instruction"></p>
     <div id="scan-result"></div>
   `;
+  const readerEl = container.querySelector<HTMLDivElement>('#qr-reader')!;
   const resultEl = container.querySelector<HTMLDivElement>('#scan-result')!;
   const instructionEl = container.querySelector<HTMLParagraphElement>('#scan-instruction')!;
   const scanner = new Html5Qrcode('qr-reader');
@@ -68,6 +69,7 @@ export function renderScanView(container: HTMLElement): ScanViewHandle {
   }
 
   function render() {
+    readerEl.style.display = state.phase === 'scanning' ? '' : 'none';
     instructionEl.textContent = state.phase === 'scanning' ? t('scanInstruction') : '';
 
     if (state.phase === 'scanning') {
@@ -94,7 +96,7 @@ export function renderScanView(container: HTMLElement): ScanViewHandle {
     } else if (state.phase === 'previewAlreadyValidated') {
       const detail = t('scanAlreadyPickedUpDetail', {
         time: state.ticket.validatedAt ? formatTimestamp(state.ticket.validatedAt.seconds) : '',
-        staff: state.ticket.validatedBy ?? '',
+        staff: state.ticket.validatedByEmail ?? '',
       });
       renderCard('card-warning', `${t('scanAlreadyPickedUpTitle')} — ${detail}`, [
         button(t('scanAgainButton'), resumeScanning),
@@ -162,7 +164,11 @@ export function renderScanView(container: HTMLElement): ScanViewHandle {
       { fps: 10, qrbox: 250 },
       async (decodedText) => {
         if (state.phase !== 'scanning') return;
-        await scanner.pause();
+        // Pause the video feed itself (not just decode scanning) and hide the
+        // reader element via render() below — the approval card should have
+        // the staff member's full attention, not a frozen camera preview
+        // competing for space above it.
+        scanner.pause(true);
         await lookUp(decodedText);
       },
       () => {

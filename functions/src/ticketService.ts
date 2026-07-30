@@ -32,6 +32,7 @@ function buildNewTicket(ticketId: string, input: NewTicketInput): Ticket {
     issuedAt: admin.firestore.Timestamp.now(),
     validatedAt: null,
     validatedBy: null,
+    validatedByEmail: null,
     validationNote: null,
     emailStatus: 'failed',
   };
@@ -76,6 +77,7 @@ export type ValidateResult =
 export async function validateTicket(
   ticketId: string,
   validatedBy: string,
+  validatedByEmail: string | null,
   note: string | null = null,
 ): Promise<ValidateResult> {
   const ref = db.collection(COLLECTION).doc(ticketId);
@@ -85,7 +87,10 @@ export async function validateTicket(
     const ticket = doc.data() as Ticket;
     if (ticket.status === 'validated') return { ok: false, reason: 'already_validated', ticket };
     const validatedAt = admin.firestore.Timestamp.now();
-    tx.update(ref, { status: 'validated', validatedAt, validatedBy, validationNote: note });
-    return { ok: true, ticket: { ...ticket, status: 'validated', validatedAt, validatedBy, validationNote: note } };
+    tx.update(ref, { status: 'validated', validatedAt, validatedBy, validatedByEmail, validationNote: note });
+    return {
+      ok: true,
+      ticket: { ...ticket, status: 'validated', validatedAt, validatedBy, validatedByEmail, validationNote: note },
+    };
   });
 }

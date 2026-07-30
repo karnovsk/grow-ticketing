@@ -13,9 +13,15 @@ export const growWebhook = onRequest({ secrets: [growWebhookKeySecret, gmailAppP
 });
 
 export const validateTicketCallable = onCall(async (request) => {
-  return handleValidateTicket(request.data, request.auth ? { uid: request.auth.uid } : undefined);
+  return handleValidateTicket(
+    request.data,
+    request.auth ? { uid: request.auth.uid, email: request.auth.token.email ?? null } : undefined,
+  );
 });
 
 export const resendTicketEmailCallable = onCall({ secrets: [gmailAppPasswordSecret] }, async (request) => {
-  return handleResendTicketEmail(request.data, request.auth ? { uid: request.auth.uid } : undefined);
+  return handleResendTicketEmail(
+    request.data,
+    request.auth ? { uid: request.auth.uid, email: request.auth.token.email ?? null } : undefined,
+  );
 });

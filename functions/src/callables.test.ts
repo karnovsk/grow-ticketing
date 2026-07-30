@@ -24,8 +24,12 @@ describe('handleValidateTicket', () => {
 
   test('validates an issued ticket for an authenticated caller', async () => {
     const { ticket } = await createTicketIfNew(sampleInput);
-    const result = await handleValidateTicket({ ticketId: ticket.ticketId }, { uid: 'staff-1' });
+    const result = await handleValidateTicket({ ticketId: ticket.ticketId }, { uid: 'staff-1', email: 'staff1@example.com' });
     expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.ticket.validatedBy).toBe('staff-1');
+      expect(result.ticket.validatedByEmail).toBe('staff1@example.com');
+    }
   });
 
   test('throws unauthenticated when auth is missing', async () => {
@@ -34,15 +38,15 @@ describe('handleValidateTicket', () => {
   });
 
   test('returns not_found without throwing for an unknown id', async () => {
-    const result = await handleValidateTicket({ ticketId: 'nope' }, { uid: 'staff-1' });
+    const result = await handleValidateTicket({ ticketId: 'nope' }, { uid: 'staff-1', email: 'staff1@example.com' });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toBe('not_found');
   });
 
   test('returns already_validated without throwing on a second validation', async () => {
     const { ticket } = await createTicketIfNew({ ...sampleInput, transactionCode: 'TX-210' });
-    await handleValidateTicket({ ticketId: ticket.ticketId }, { uid: 'staff-1' });
-    const result = await handleValidateTicket({ ticketId: ticket.ticketId }, { uid: 'staff-2' });
+    await handleValidateTicket({ ticketId: ticket.ticketId }, { uid: 'staff-1', email: 'staff1@example.com' });
+    const result = await handleValidateTicket({ ticketId: ticket.ticketId }, { uid: 'staff-2', email: 'staff2@example.com' });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toBe('already_validated');
   });
@@ -55,7 +59,7 @@ describe('handleResendTicketEmail', () => {
 
   test('resends the email and updates emailStatus', async () => {
     const { ticket } = await createTicketIfNew({ ...sampleInput, transactionCode: 'TX-201' });
-    const result = await handleResendTicketEmail({ ticketId: ticket.ticketId }, { uid: 'staff-1' });
+    const result = await handleResendTicketEmail({ ticketId: ticket.ticketId }, { uid: 'staff-1', email: 'staff1@example.com' });
     expect(result.sent).toBe(true);
   });
 
@@ -66,7 +70,7 @@ describe('handleResendTicketEmail', () => {
   test('reports sent:false and marks emailStatus failed when the email provider fails', async () => {
     const { ticket } = await createTicketIfNew({ ...sampleInput, transactionCode: 'TX-211' });
     (sendTicketEmail as jest.Mock).mockResolvedValueOnce(false);
-    const result = await handleResendTicketEmail({ ticketId: ticket.ticketId }, { uid: 'staff-1' });
+    const result = await handleResendTicketEmail({ ticketId: ticket.ticketId }, { uid: 'staff-1', email: 'staff1@example.com' });
     expect(result.sent).toBe(false);
   });
 });

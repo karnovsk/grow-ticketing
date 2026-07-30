@@ -27,19 +27,26 @@ export async function renderDashboardView(container: HTMLElement) {
         customerName: string;
         items: { name: string; quantity: number }[];
         validatedAt: { seconds: number } | null;
+        validatedByEmail: string | null;
         emailStatus: 'sent' | 'failed';
       };
       const li = document.createElement('li');
       const summary = document.createElement('span');
-      const validatedText = data.validatedAt
-        ? ` ${t('dashboardValidatedAt', { time: formatTimestamp(data.validatedAt.seconds) })}`
-        : '';
+      let validatedText = '';
+      if (data.validatedAt) {
+        validatedText = data.validatedByEmail
+          ? ` ${t('dashboardValidatedBy', {
+              time: formatTimestamp(data.validatedAt.seconds),
+              staff: data.validatedByEmail,
+            })}`
+          : ` ${t('dashboardValidatedAt', { time: formatTimestamp(data.validatedAt.seconds) })}`;
+      }
       summary.textContent = `${data.customerName} — ${formatItemList(data.items)}${validatedText}`;
       li.appendChild(summary);
 
       if (data.emailStatus === 'failed') {
         const resendButton = document.createElement('button');
-        resendButton.className = 'btn btn-secondary';
+        resendButton.className = 'btn btn-secondary btn-small';
         resendButton.textContent = t('dashboardResendButton');
         resendButton.addEventListener('click', async () => {
           resendButton.disabled = true;

@@ -40,6 +40,7 @@ export type TranslationKey =
   | 'statusIssued'
   | 'statusValidated'
   | 'dashboardValidatedAt'
+  | 'dashboardValidatedBy'
   | 'dashboardResendButton'
   | 'dashboardResendSuccess'
   | 'dashboardResendFailure';
@@ -85,6 +86,7 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     statusIssued: 'Issued',
     statusValidated: 'Picked up',
     dashboardValidatedAt: '(validated {{time}})',
+    dashboardValidatedBy: '(validated {{time}} by {{staff}})',
     dashboardResendButton: 'Resend email',
     dashboardResendSuccess: 'Email resent',
     dashboardResendFailure: 'Resend failed — try again',
@@ -129,6 +131,7 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     statusIssued: 'הונפק',
     statusValidated: 'נמסר',
     dashboardValidatedAt: '(נמסר ב-{{time}})',
+    dashboardValidatedBy: '(נמסר ב-{{time}} על ידי {{staff}})',
     dashboardResendButton: 'שליחה חוזרת של האימייל',
     dashboardResendSuccess: 'האימייל נשלח מחדש',
     dashboardResendFailure: 'השליחה נכשלה — נסו שוב',

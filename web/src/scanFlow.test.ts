@@ -11,6 +11,7 @@ const issuedTicket: TicketRecord = {
   items: [{ name: 'Widget', quantity: 1 }],
   validatedAt: null,
   validatedBy: null,
+  validatedByEmail: null,
 };
 
 const validatedTicket: TicketRecord = { ...issuedTicket, status: 'validated' };

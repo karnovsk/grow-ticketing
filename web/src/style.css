@@ -118,6 +118,12 @@ main {
   width: 100%;
 }
 
+.btn-small {
+  min-height: 32px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+}
+
 input,
 select {
   width: 100%;
@@ -217,6 +223,24 @@ select {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+/* Dashboard rows only (#ticket-list, distinct from search results' #search-results,
+   which needs its multi-line layout for the note input + validate button) — one
+   compact line per ticket so a screenful of pickups is scannable at a glance. */
+#ticket-list li {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+#ticket-list li span {
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .search-controls {

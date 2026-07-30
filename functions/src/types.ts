@@ -15,6 +15,7 @@ export interface Ticket {
   issuedAt: FirebaseFirestore.Timestamp;
   validatedAt: FirebaseFirestore.Timestamp | null;
   validatedBy: string | null;
+  validatedByEmail: string | null;
   validationNote: string | null;
   emailStatus: 'sent' | 'failed';
 }
