@@ -26,8 +26,7 @@ export type TranslationKey =
   | 'scanPickedUpTitle'
   | 'scanNextButton'
   | 'scanCameraError'
-  | 'searchFieldName'
-  | 'searchFieldPhone'
+  | 'searchFieldTicketId'
   | 'searchFieldTransaction'
   | 'searchValuePlaceholder'
   | 'searchButton'
@@ -73,7 +72,7 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     headerLoggedInAs: 'Logged in as {{email}}',
     headerLogoutButton: 'Log out',
     navScan: 'Scan',
-    navSearch: 'Search',
+    navSearch: 'Search by Trans. Code',
     navDashboard: 'Tickets',
     noItems: 'No items',
     scanInstruction: 'Point camera at ticket QR',
@@ -90,8 +89,7 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     scanPickedUpTitle: 'Picked up',
     scanNextButton: 'Scan next',
     scanCameraError: 'Could not access the camera. Check camera permissions and try again.',
-    searchFieldName: 'Name',
-    searchFieldPhone: 'Phone',
+    searchFieldTicketId: 'Ticket ID',
     searchFieldTransaction: 'Transaction code',
     searchValuePlaceholder: 'Search value',
     searchButton: 'Search',
@@ -136,7 +134,7 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     headerLoggedInAs: 'מחוברים כ-{{email}}',
     headerLogoutButton: 'התנתקות',
     navScan: 'סריקה',
-    navSearch: 'חיפוש',
+    navSearch: 'חיפוש לפי אסמכתא',
     navDashboard: 'כרטיסים',
     noItems: 'אין פריטים',
     scanInstruction: 'כוונו את המצלמה לקוד ה-QR של הכרטיס',
@@ -153,8 +151,7 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     scanPickedUpTitle: 'נמסר',
     scanNextButton: 'לסריקה הבאה',
     scanCameraError: 'לא ניתן לגשת למצלמה. בדקו את הרשאות המצלמה ונסו שוב.',
-    searchFieldName: 'שם',
-    searchFieldPhone: 'טלפון',
+    searchFieldTicketId: 'מזהה כרטיס',
     searchFieldTransaction: 'קוד עסקה',
     searchValuePlaceholder: 'ערך לחיפוש',
     searchButton: 'חיפוש',

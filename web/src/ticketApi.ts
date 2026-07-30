@@ -37,10 +37,7 @@ export async function resendTicketEmail(ticketId: string) {
   return result.data;
 }
 
-export async function searchTicketsByField(
-  field: 'customerName' | 'customerPhone' | 'transactionCode',
-  value: string,
-): Promise<TicketRecord[]> {
+export async function searchTicketsByField(field: 'transactionCode', value: string): Promise<TicketRecord[]> {
   const q = query(collection(db, 'tickets'), where(field, '==', value));
   const snap = await getDocs(q);
   return snap.docs.map((doc) => doc.data() as TicketRecord);

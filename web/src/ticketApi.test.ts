@@ -30,7 +30,7 @@ describe('validateTicket', () => {
 
 describe('searchTicketsByField', () => {
   test('returns mapped ticket records from the query snapshot', async () => {
-    const results = await searchTicketsByField('customerPhone', '0501234567');
+    const results = await searchTicketsByField('transactionCode', 'TX-1');
     expect(results).toEqual([{ ticketId: 't1', status: 'issued' }]);
   });
 });

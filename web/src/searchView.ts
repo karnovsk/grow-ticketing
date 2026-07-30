@@ -1,4 +1,4 @@
-import { searchTicketsByField, validateTicket, TicketRecord } from './ticketApi';
+import { searchTicketsByField, getTicketById, validateTicket, TicketRecord } from './ticketApi';
 import { formatItemList } from './format';
 import { t } from './i18n';
 
@@ -6,8 +6,7 @@ export function renderSearchView(container: HTMLElement) {
   container.innerHTML = `
     <div class="search-controls">
       <select id="search-field">
-        <option value="customerName">${t('searchFieldName')}</option>
-        <option value="customerPhone">${t('searchFieldPhone')}</option>
+        <option value="ticketId">${t('searchFieldTicketId')}</option>
         <option value="transactionCode">${t('searchFieldTransaction')}</option>
       </select>
       <input id="search-value" placeholder="${t('searchValuePlaceholder')}" />
@@ -21,7 +20,12 @@ export function renderSearchView(container: HTMLElement) {
   const resultsList = container.querySelector<HTMLUListElement>('#search-results')!;
 
   async function runSearch() {
-    const field = fieldSelect.value as 'customerName' | 'customerPhone' | 'transactionCode';
+    const field = fieldSelect.value as 'ticketId' | 'transactionCode';
+    if (field === 'ticketId') {
+      const ticket = await getTicketById(valueInput.value);
+      renderResults(ticket ? [ticket] : []);
+      return;
+    }
     const results = await searchTicketsByField(field, valueInput.value);
     renderResults(results);
   }

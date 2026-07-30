@@ -107,8 +107,8 @@ function renderApp(userEmail: string) {
     </header>
     <nav>
       <a href="#scan">${t('navScan')}</a>
-      <a href="#search">${t('navSearch')}</a>
       <a href="#dashboard">${t('navDashboard')}</a>
+      <a href="#search">${t('navSearch')}</a>
     </nav>
     <main id="view"></main>
   `;
