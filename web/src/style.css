@@ -10,7 +10,39 @@
   --color-error: #dc2626;
   --radius: 12px;
   --spacing: 1rem;
+  /* Chrome (header/nav) and accent tokens are split out from the base
+     palette so an alternate brand theme (see [data-theme="habaronit"]
+     below) can restyle the app shell and a sparing highlight color without
+     touching --color-surface/--color-text — content cards and inputs stay
+     legible regardless of which theme is active. Defaults here match the
+     plain look exactly, so this split is a no-op until a theme is set. */
+  --color-chrome-bg: var(--color-surface);
+  --color-chrome-text: var(--color-text);
+  --color-nav-hover-bg: var(--color-bg);
+  --color-accent: var(--color-primary);
+  --color-on-primary: #ffffff;
   font-family: system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+}
+
+/* Brand theme sampled from habaronit.my.canva.site/menu (forest green +
+   gold), muted down from the site's own saturated colors — this is chrome
+   for a functional staff app, not the marketing site itself. Off by
+   default — set VITE_THEME=habaronit in web/.env to enable (see main.ts).
+   Semantic status colors (success/warning/error) are deliberately left
+   untouched so validated/failed states keep their universal meaning across
+   both themes. --color-bg intentionally stays a light near-white tint, not
+   the bold brand green — components like .qty-badge assume it's a light
+   background to sit text on, and confining the saturated color to the
+   header/nav chrome (the one place worth spending it) keeps the rest of
+   the app calm instead of flooding every surface with it. */
+:root[data-theme='habaronit'] {
+  --color-bg: #f2f5f1;
+  --color-chrome-bg: #3a5943;
+  --color-chrome-text: #f5f1e0;
+  --color-nav-hover-bg: #2e4736;
+  --color-primary: #4a7057;
+  --color-on-primary: #ffffff;
+  --color-accent: #c9a83f;
 }
 
 * {
@@ -36,7 +68,8 @@ header {
   justify-content: space-between;
   gap: var(--spacing);
   padding: 0.75rem 1rem;
-  background: var(--color-surface);
+  background: var(--color-chrome-bg);
+  color: var(--color-chrome-text);
   border-block-end: 1px solid #e7e5e4;
 }
 
@@ -47,6 +80,10 @@ header {
 }
 
 .lang-toggle {
+  /* Explicit color, not inherited — buttons don't reliably inherit text
+     color from ancestors (some browsers default it to a UA system color),
+     so without this it could render invisible against a themed header. */
+  color: var(--color-chrome-text);
   border: 1px solid #d6d3d1;
   background: transparent;
   border-radius: 999px;
@@ -60,7 +97,7 @@ nav {
   display: flex;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: var(--color-surface);
+  background: var(--color-chrome-bg);
   border-block-end: 1px solid #e7e5e4;
 }
 
@@ -68,13 +105,13 @@ nav a {
   padding: 0.5rem 0.75rem;
   border-radius: var(--radius);
   text-decoration: none;
-  color: var(--color-text);
+  color: var(--color-chrome-text);
   font-weight: 600;
 }
 
 nav a:hover,
 nav a:focus-visible {
-  background: var(--color-bg);
+  background: var(--color-nav-hover-bg);
 }
 
 main {
@@ -105,7 +142,7 @@ main {
 
 .btn-primary {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-on-primary);
 }
 
 .btn-secondary {
@@ -150,7 +187,7 @@ select {
 }
 
 .card-neutral {
-  border-inline-start-color: var(--color-primary);
+  border-inline-start-color: var(--color-accent);
 }
 
 .card-success {
@@ -232,6 +269,7 @@ select {
 
 .pill-issued {
   background: var(--color-primary);
+  color: var(--color-on-primary);
 }
 
 .pill-validated {
@@ -277,6 +315,13 @@ select {
   flex-direction: row;
   align-items: center;
   gap: 0.75rem;
+  cursor: pointer;
+  transition: box-shadow 150ms ease;
+}
+
+#ticket-list li:hover,
+#ticket-list li:focus-visible {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .ticket-summary {
@@ -320,6 +365,12 @@ select {
   border-radius: 6px;
   border: 1px solid #d6d3d1;
   background: var(--color-bg);
+  /* Explicit, not inherited: --color-bg is only ever a light neutral tint
+     (even in the habaronit theme — see the note above the theme block), so
+     the badge's text must stay a fixed dark color rather than picking up
+     whatever --color-text/--color-chrome-text happens to resolve to in an
+     ancestor, which could put light text on this light background. */
+  color: var(--color-text);
   font-size: 0.8rem;
   font-weight: 600;
 }
@@ -350,5 +401,69 @@ select {
   .search-controls select {
     width: auto;
     flex: 1;
+  }
+}
+
+/* Small entrance motion — gated entirely behind prefers-reduced-motion so
+   that with it set, these classes carry no animation at all (elements just
+   render in their normal end state immediately) rather than needing a JS
+   feature check at every call site. */
+@media (prefers-reduced-motion: no-preference) {
+  .view-enter {
+    animation: view-enter 220ms ease-out;
+  }
+
+  .ticket-row-enter {
+    animation: row-enter 260ms ease-out both;
+  }
+
+  .modal-backdrop {
+    animation: backdrop-fade 180ms ease-out;
+  }
+
+  .modal {
+    animation: modal-pop 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+@keyframes view-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes row-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes backdrop-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
 }

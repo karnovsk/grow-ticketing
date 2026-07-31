@@ -15,6 +15,12 @@ let currentRoute: 'scan' | 'search' | 'dashboard' = 'scan';
 
 applyDir();
 
+// Optional brand theme, off by default — set VITE_THEME=habaronit in
+// web/.env to enable (see the [data-theme='habaronit'] block in style.css).
+if (import.meta.env.VITE_THEME) {
+  document.documentElement.dataset.theme = import.meta.env.VITE_THEME;
+}
+
 function renderRoute() {
   const view = document.querySelector<HTMLElement>('#view');
   if (!view) return;
@@ -26,6 +32,13 @@ function renderRoute() {
   if (currentRoute === 'scan') scanHandle = renderScanView(view);
   else if (currentRoute === 'search') renderSearchView(view);
   else if (currentRoute === 'dashboard') renderDashboardView(view);
+
+  // Restart the entrance animation even when navigating to the same route
+  // twice in a row (removing the class alone wouldn't retrigger it — the
+  // offsetWidth read forces a reflow in between).
+  view.classList.remove('view-enter');
+  void view.offsetWidth;
+  view.classList.add('view-enter');
 }
 
 function langToggleLabel(): string {

@@ -35,10 +35,13 @@ export async function renderDashboardView(container: HTMLElement) {
     const q = query(collection(db, 'tickets'), ...constraints);
     const snap = await getDocs(q);
     currentTickets = snap.docs.map((doc) => doc.data() as TicketRecord);
-    renderList();
+    renderList(true);
   }
 
-  function renderList() {
+  // `animate` is only true for genuine data loads (initial mount, status
+  // filter change) — not on every fuzzy-filter keystroke, so typing narrows
+  // the list instantly instead of waiting on a staggered entrance each time.
+  function renderList(animate = false) {
     const filterText = ticketFilter.value;
     const tickets = filterText.trim()
       ? currentTickets.filter(
@@ -47,7 +50,14 @@ export async function renderDashboardView(container: HTMLElement) {
       : currentTickets;
 
     list.innerHTML = '';
-    tickets.forEach((ticket) => list.appendChild(renderRow(ticket)));
+    tickets.forEach((ticket, index) => {
+      const row = renderRow(ticket);
+      if (animate) {
+        row.classList.add('ticket-row-enter');
+        row.style.animationDelay = `${Math.min(index, 20) * 25}ms`;
+      }
+      list.appendChild(row);
+    });
   }
 
   function renderRow(ticket: TicketRecord): HTMLLIElement {
