@@ -60,7 +60,7 @@ export function renderSearchView(container: HTMLElement) {
               reason?: string;
             };
             if (result.ok) {
-              pill.className = 'pill pill-validated';
+              pill.className = 'pill pill-validated pill-pop';
               pill.textContent = t('statusValidated');
               summary.append(t('searchValidatedSuffix'));
               noteInput.remove();

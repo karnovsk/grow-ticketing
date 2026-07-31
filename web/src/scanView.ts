@@ -38,7 +38,11 @@ export function renderScanView(container: HTMLElement): ScanViewHandle {
   function renderCard(variant: string, text: string, buttons: HTMLButtonElement[]) {
     resultEl.innerHTML = '';
     const card = document.createElement('div');
-    card.className = `card ${variant}`;
+    // card-validate-pop is a more emphasized entrance reserved for the
+    // "picked up" success card specifically, so confirming a ticket reads
+    // as a distinct beat rather than just another card appearing.
+    const entranceClass = variant === 'card-success' ? 'card-validate-pop' : 'card-enter';
+    card.className = `card ${variant} ${entranceClass}`;
     const heading = document.createElement('p');
     heading.textContent = text;
     card.appendChild(heading);

@@ -54,7 +54,7 @@ export async function renderDashboardView(container: HTMLElement) {
       const row = renderRow(ticket);
       if (animate) {
         row.classList.add('ticket-row-enter');
-        row.style.animationDelay = `${Math.min(index, 20) * 25}ms`;
+        row.style.animationDelay = `${Math.min(index, 20) * 30}ms`;
       }
       list.appendChild(row);
     });
@@ -121,6 +121,28 @@ export async function renderDashboardView(container: HTMLElement) {
   await load();
 }
 
+function closeModal(backdrop: HTMLDivElement) {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    backdrop.remove();
+    return;
+  }
+  // The fade/scale-out is driven by CSS (.modal-backdrop-closing), but
+  // something still has to decide when it's safe to actually remove the
+  // element — animationend on the backdrop itself marks that moment.
+  // animationend bubbles, so the target check matters: the nested .modal's
+  // own (shorter) closing animation finishing bubbles up first, and {once:
+  // true} would consume the listener on that bubbled event, leaving nothing
+  // to catch the backdrop's own animationend later — so this removes itself
+  // manually only once it actually sees the backdrop's own event.
+  backdrop.classList.add('modal-backdrop-closing');
+  const onAnimationEnd = (event: AnimationEvent) => {
+    if (event.target !== backdrop) return;
+    backdrop.removeEventListener('animationend', onAnimationEnd);
+    backdrop.remove();
+  };
+  backdrop.addEventListener('animationend', onAnimationEnd);
+}
+
 function fieldRow(text: string): HTMLParagraphElement {
   const p = document.createElement('p');
   p.textContent = text;
@@ -163,7 +185,7 @@ function renderDetailModal(container: HTMLElement, ticket: TicketRecord, onChang
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
   backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) backdrop.remove();
+    if (event.target === backdrop) closeModal(backdrop);
   });
 
   const modal = document.createElement('div');
@@ -174,7 +196,7 @@ function renderDetailModal(container: HTMLElement, ticket: TicketRecord, onChang
   closeButton.type = 'button';
   closeButton.className = 'btn btn-secondary btn-small modal-close';
   closeButton.textContent = t('dashboardDetailClose');
-  closeButton.addEventListener('click', () => backdrop.remove());
+  closeButton.addEventListener('click', () => closeModal(backdrop));
   modal.appendChild(closeButton);
 
   const heading = document.createElement('h2');
@@ -235,7 +257,7 @@ function renderValidateAction(
     try {
       const result = (await validateTicket(ticket.ticketId, noteInput.value)) as { ok: boolean };
       if (result.ok) {
-        backdrop.remove();
+        closeModal(backdrop);
         onChanged();
       } else {
         feedback.textContent = t('searchErrorSuffix');
@@ -278,7 +300,7 @@ function renderInvalidateAction(
       try {
         const result = (await invalidateTicket(ticket.ticketId)) as { ok: boolean };
         if (result.ok) {
-          backdrop.remove();
+          closeModal(backdrop);
           onChanged();
         } else {
           feedback.textContent = t('searchErrorSuffix');
