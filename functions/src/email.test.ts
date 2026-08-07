@@ -1,5 +1,5 @@
-import * as admin from 'firebase-admin';
-import { buildTicketEmailHtml, sendTicketEmail } from './email';
+import { Timestamp } from 'firebase-admin/firestore';
+import { buildTicketEmailHtml, sendTicketEmail, QR_IMAGE_CID } from './email';
 import { Ticket } from './types';
 import { EmailSettings } from './settings';
 
@@ -26,7 +26,7 @@ const sampleTicket: Ticket = {
   customerPhone: null,
   items: [{ name: 'Widget', quantity: 2 }],
   paymentSum: 50,
-  issuedAt: admin.firestore.Timestamp.now(),
+  issuedAt: Timestamp.now(),
   validatedAt: null,
   validatedBy: null,
   validatedByEmail: null,
@@ -42,12 +42,17 @@ const sampleSettings: EmailSettings = {
 };
 
 describe('buildTicketEmailHtml', () => {
-  test('includes customer name, settings copy, QR image, and item list', () => {
-    const html = buildTicketEmailHtml(sampleTicket, 'data:image/png;base64,ABC', sampleSettings);
+  test('includes customer name, settings copy, QR image cid reference, and item list', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', sampleSettings);
     expect(html).toContain('Jane Doe');
     expect(html).toContain('Thanks for your purchase!');
-    expect(html).toContain('data:image/png;base64,ABC');
+    expect(html).toContain('src="cid:qr-cid-123"');
     expect(html).toContain('2 x Widget');
+  });
+
+  test('does not embed the QR as a data: URI (Gmail does not render those)', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', sampleSettings);
+    expect(html).not.toContain('data:image');
   });
 
   test('escapes HTML in customer name and item names', () => {
@@ -57,7 +62,7 @@ describe('buildTicketEmailHtml', () => {
         customerName: '<script>alert(1)</script>',
         items: [{ name: 'Widget <b>&</b>', quantity: 1 }],
       },
-      'data:image/png;base64,ABC',
+      'qr-cid-123',
       sampleSettings,
     );
     expect(html).not.toContain('<script>');
@@ -89,6 +94,18 @@ describe('sendTicketEmail (resend)', () => {
     global.fetch = jest.fn().mockResolvedValue({ ok: true } as Response);
     const result = await sendTicketEmail(sampleTicket, 'data:image/png;base64,ABC');
     expect(result).toBe(true);
+  });
+
+  test('sends the QR as an inline content_id attachment instead of a data: URI in the html', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: true } as Response);
+    await sendTicketEmail(sampleTicket, 'data:image/png;base64,QUJD');
+    const [, requestInit] = (global.fetch as jest.Mock).mock.calls[0];
+    const body = JSON.parse(requestInit.body);
+    expect(body.html).not.toContain('data:image');
+    expect(body.html).toContain(`src="cid:${QR_IMAGE_CID}"`);
+    expect(body.attachments).toEqual([
+      expect.objectContaining({ content_id: QR_IMAGE_CID, content: 'QUJD' }),
+    ]);
   });
 
   test('returns false when Resend responds with an error', async () => {
@@ -138,6 +155,17 @@ describe('sendTicketEmail (gmail)', () => {
     expect(sendMailMock).toHaveBeenCalledWith(
       expect.objectContaining({ from: 'tickets@gmail.com', to: 'jane@example.com' }),
     );
+  });
+
+  test('attaches the QR as an inline cid attachment instead of a data: URI in the html', async () => {
+    sendMailMock.mockResolvedValue(undefined);
+    await sendTicketEmail(sampleTicket, 'data:image/png;base64,QUJD');
+    const call = sendMailMock.mock.calls[0][0];
+    expect(call.html).not.toContain('data:image');
+    expect(call.html).toContain(`src="cid:${QR_IMAGE_CID}"`);
+    expect(call.attachments).toEqual([
+      expect.objectContaining({ cid: QR_IMAGE_CID, content: Buffer.from('QUJD', 'base64') }),
+    ]);
   });
 
   test('returns false when nodemailer throws', async () => {

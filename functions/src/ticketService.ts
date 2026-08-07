@@ -1,4 +1,4 @@
-import * as admin from 'firebase-admin';
+import { Timestamp } from 'firebase-admin/firestore';
 import { randomUUID } from 'crypto';
 import { db } from './admin';
 import { Ticket, TicketItem } from './types';
@@ -29,7 +29,7 @@ function buildNewTicket(ticketId: string, input: NewTicketInput): Ticket {
     customerPhone: input.customerPhone,
     items: input.items,
     paymentSum: input.paymentSum,
-    issuedAt: admin.firestore.Timestamp.now(),
+    issuedAt: Timestamp.now(),
     validatedAt: null,
     validatedBy: null,
     validatedByEmail: null,
@@ -95,7 +95,7 @@ export async function validateTicket(
     if (!doc.exists) return { ok: false, reason: 'not_found' };
     const ticket = doc.data() as Ticket;
     if (ticket.status === 'validated') return { ok: false, reason: 'already_validated', ticket };
-    const validatedAt = admin.firestore.Timestamp.now();
+    const validatedAt = Timestamp.now();
     const validationNote = appendNote(ticket.validationNote, note);
     tx.update(ref, { status: 'validated', validatedAt, validatedBy, validatedByEmail, validationNote });
     return {

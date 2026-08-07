@@ -10,7 +10,14 @@ function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;');
 }
 
-export function buildTicketEmailHtml(ticket: Ticket, qrDataUri: string, settings: EmailSettings): string {
+// Gmail (and most webmail clients) refuse to render `data:` URI images in
+// the body of a received HTML email — they only show inline images that are
+// real MIME attachments referenced by Content-ID. So the QR is sent as a
+// `cid:` reference here; each provider is responsible for attaching the
+// actual image bytes under that same cid (see sendViaGmail).
+export const QR_IMAGE_CID = 'ticket-qr';
+
+export function buildTicketEmailHtml(ticket: Ticket, qrCid: string, settings: EmailSettings): string {
   const itemsHtml = ticket.items
     .map((item) => `<li>${item.quantity} x ${escapeHtml(item.name)}</li>`)
     .join('');
@@ -18,11 +25,15 @@ export function buildTicketEmailHtml(ticket: Ticket, qrDataUri: string, settings
     <div>
       <p>Hi ${escapeHtml(ticket.customerName)}, ${settings.greeting}</p>
       <p>${settings.qrInstructions}</p>
-      <img src="${qrDataUri}" alt="Pickup QR code" width="300" height="300" />
+      <img src="cid:${qrCid}" alt="Pickup QR code" width="300" height="300" />
       <p>${settings.itemsLabel}</p>
       <ul>${itemsHtml}</ul>
     </div>
   `;
+}
+
+function qrDataUriToBuffer(qrDataUri: string): Buffer {
+  return Buffer.from(qrDataUri.split(',')[1], 'base64');
 }
 
 async function sendViaResend(ticket: Ticket, qrDataUri: string): Promise<boolean> {
@@ -35,6 +46,9 @@ async function sendViaResend(ticket: Ticket, qrDataUri: string): Promise<boolean
     throw new Error('TICKET_EMAIL_FROM is not configured');
   }
   const settings = await getEmailSettings();
+  // NOTE: this provider is not currently reachable in production (no
+  // RESEND_API_KEY secret is declared/bound — see secrets.ts and the
+  // README's "Switching email providers" section).
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -45,7 +59,14 @@ async function sendViaResend(ticket: Ticket, qrDataUri: string): Promise<boolean
       from: fromAddress,
       to: ticket.customerEmail,
       subject: settings.subject,
-      html: buildTicketEmailHtml(ticket, qrDataUri, settings),
+      html: buildTicketEmailHtml(ticket, QR_IMAGE_CID, settings),
+      attachments: [
+        {
+          filename: 'ticket-qr.png',
+          content: qrDataUri.split(',')[1],
+          content_id: QR_IMAGE_CID,
+        },
+      ],
     }),
   });
   return response.ok;
@@ -70,7 +91,14 @@ async function sendViaGmail(ticket: Ticket, qrDataUri: string): Promise<boolean>
       from: user,
       to: ticket.customerEmail,
       subject: settings.subject,
-      html: buildTicketEmailHtml(ticket, qrDataUri, settings),
+      html: buildTicketEmailHtml(ticket, QR_IMAGE_CID, settings),
+      attachments: [
+        {
+          filename: 'ticket-qr.png',
+          content: qrDataUriToBuffer(qrDataUri),
+          cid: QR_IMAGE_CID,
+        },
+      ],
     });
     return true;
   } catch {
