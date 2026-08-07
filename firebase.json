@@ -17,9 +17,9 @@
     "indexes": "firestore.indexes.json"
   },
   "emulators": {
-    "functions": { "port": 5001 },
-    "firestore": { "port": 8080 },
-    "auth": { "port": 9099 },
+    "functions": { "port": 5001, "host": "0.0.0.0" },
+    "firestore": { "port": 8080, "host": "0.0.0.0" },
+    "auth": { "port": 9099, "host": "0.0.0.0" },
     "hosting": { "port": 5000 },
     "ui": { "enabled": true }
   }
