@@ -107,6 +107,8 @@ For any future change to functions and/or the web app together:
 
 `firebase.json` runs `npm --prefix functions run build` and `npm --prefix web run build` automatically as `predeploy` hooks for their respective targets — you don't need to build either manually first, just make sure `npm install` has been run in both `functions/` and `web/` at least once (step 1.4).
 
+You can also deploy targets individually, e.g. `--only firestore` (shorthand for `firestore:rules,firestore:indexes` together) or `--only hosting`. Note that `--only firestore` **does not touch the hosted web app** — if the live site looks stale or blank after a Firestore-only deploy, that's expected; redeploy `hosting` separately. A successful hosting deploy prints its own URL, which for this project is `https://habaronit-qr.web.app` (also aliased at `https://habaronit-qr.firebaseapp.com`).
+
 ### Switching email providers
 
 Only one provider's secret is wired up at a time. Right now `functions/src/secrets.ts` only declares `GROW_WEBHOOK_KEY` and `GMAIL_APP_PASSWORD` — the `RESEND_API_KEY` declaration was deliberately removed because Firebase's deploy step prompts for a value for *every* `defineSecret()` found in the built codebase, even ones no function actually uses; leaving an unused declaration in place blocks deploys with an empty-value prompt.
@@ -117,9 +119,35 @@ To switch to Resend later:
 3. Set `functions/.env`'s `EMAIL_PROVIDER=resend` and `TICKET_EMAIL_FROM`.
 4. Run `firebase functions:secrets:set RESEND_API_KEY` and redeploy.
 
-## Customizing the ticket email's wording
+## Customizing the ticket email's wording and branding
 
-The email's subject, greeting, QR instructions, and items label are read from the `settings/emailTemplate` document in Firestore, not hardcoded. To customize them, open Firebase console → Firestore → create (or edit) a document at `settings/emailTemplate` with any of these string fields: `subject`, `greeting`, `qrInstructions`, `itemsLabel`. Any field left out keeps its built-in default (see `functions/src/settings.ts`). No redeploy is needed — changes take effect on the next email sent.
+The confirmation email's copy, branding, and layout details are all read from the `settings/emailTemplate` document in Firestore, not hardcoded — this keeps the repo generic across deployments. To customize them, open Firebase console → Firestore → create (or edit) a document at `settings/emailTemplate` with any of these fields (see `functions/src/settings.ts` for the full defaults):
+
+**Text (string fields):**
+- `subject` — email subject line
+- `greeting` — the opening line under the business name; include the literal token `{customerName}` anywhere in the text to have it replaced with the buyer's name (e.g. `"Hi {customerName}, thanks for your purchase!"`, or in Hebrew `"שלום {customerName}, ההזמנה שלך מוכנה לאיסוף!"`). The token is optional — omit it if you don't want the name shown.
+- `qrInstructions` — text shown under the QR code
+- `qrAltText` — alt text for the QR image (accessibility/fallback text, not usually visible)
+- `itemsLabel`, `totalLabel`, `dateLabel`, `confirmationCodeLabel` — receipt section labels (the template appends `:` after each automatically, so don't include one in the value)
+- `itemSeparator` — the text between quantity and item name in each line (default `"x"`, e.g. `"2 x Widget"`)
+- `businessName` — shown in the hero band
+
+**Branding:**
+- `logoUrl` — a public `https://` URL to the business's logo image; omit or set to an empty string to show no logo
+- `primaryColor` — a hex color (`#rgb`, `#rrggbb`, or `#rrggbbaa`) for the hero band background; invalid or missing values fall back to a neutral default rather than breaking the email
+- `direction` — `"rtl"` or `"ltr"`; controls text direction and alignment throughout the email
+
+**Other:**
+- `currencySymbol` — prefix for the total amount (default `"$"`)
+- `utcOffsetMinutes` — the business's local UTC offset in minutes (e.g. `180` for Israel Daylight Time, UTC+3), used only to compute the correct local calendar date shown on the receipt
+
+Any field left out keeps its built-in default. No redeploy is needed — changes take effect on the next email sent. Note: `primaryColor` is rendered as white text over the hero band, so avoid very light colors (no automatic contrast adjustment).
+
+## One-off Firestore reads/writes from a local script
+
+A standalone Node script using `firebase-admin` (e.g. `admin.initializeApp({projectId: ...})`) needs Application Default Credentials (ADC) to authenticate, separate from the Firebase CLI's own login. If `gcloud auth application-default login` hasn't been run on your machine, such a script fails with "Could not load the default credentials" even though `firebase deploy` and other CLI commands work fine (they use a different, CLI-internal OAuth flow).
+
+If you hit this and don't want to set up `gcloud`/ADC, the workaround is to reuse the CLI's working auth instead: write a temporary Cloud Function (`onRequest`, guarded by a shared-secret query param you choose), deploy just it (`firebase deploy --only functions:<name>`), `curl` it once to perform the read/write, then delete it (`firebase functions:delete <name> --force`) and remove the code/secret.
 
 ## Deferred features (see design spec)
 

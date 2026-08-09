@@ -17,20 +17,25 @@ function escapeHtml(value: string): string {
 // actual image bytes under that same cid (see sendViaGmail).
 export const QR_IMAGE_CID = 'ticket-qr';
 
-function formatDate(timestamp: FirebaseFirestore.Timestamp): string {
-  const date = timestamp.toDate();
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  return `${day}.${month}.${date.getFullYear()}`;
+const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{3,8}$/;
+
+function formatDate(timestamp: FirebaseFirestore.Timestamp, utcOffsetMinutes: number): string {
+  const date = new Date(timestamp.toMillis() + utcOffsetMinutes * 60000);
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  return `${day}.${month}.${date.getUTCFullYear()}`;
 }
 
 export function buildTicketEmailHtml(ticket: Ticket, qrCid: string, settings: EmailSettings): string {
-  const align = settings.direction === 'rtl' ? 'right' : 'left';
+  const isRtl = settings.direction.toLowerCase() === 'rtl';
+  const align = isRtl ? 'right' : 'left';
+  const primaryColor = HEX_COLOR_PATTERN.test(settings.primaryColor) ? settings.primaryColor : '#3a3a3a';
+  const greetingHtml = escapeHtml(settings.greeting).replace('{customerName}', escapeHtml(ticket.customerName));
 
   const itemsHtml = ticket.items
     .map(
       (item) =>
-        `<tr><td style="padding:4px 0;text-align:${align};font-size:14px;color:#333333;">${item.quantity} x ${escapeHtml(item.name)}</td></tr>`,
+        `<tr><td style="padding:4px 0;text-align:${align};font-size:14px;color:#333333;">${item.quantity} ${escapeHtml(settings.itemSeparator)} ${escapeHtml(item.name)}</td></tr>`,
     )
     .join('');
 
@@ -42,32 +47,37 @@ export function buildTicketEmailHtml(ticket: Ticket, qrCid: string, settings: Em
   // hero band's bottom corners to read as a ticket's punch holes. Outlook
   // desktop's rendering engine (Word) handles absolute positioning and
   // border-radius poorly, so it's excluded via MSO conditional comments —
-  // Outlook simply sees the plain rectangular band underneath instead.
+  // Outlook simply sees the plain rectangular band underneath instead. Gmail
+  // strips `position` from inline styles but does honor `overflow`/`height`,
+  // so the zero-height, overflow-hidden wrapper clips the circles there too
+  // even though `position:absolute` itself gets stripped in Gmail.
   const notchesHtml = `<!--[if !mso]><!-->
-        <div style="position:absolute;bottom:-10px;left:-10px;width:20px;height:20px;border-radius:50%;background:#ffffff;"></div>
-        <div style="position:absolute;bottom:-10px;right:-10px;width:20px;height:20px;border-radius:50%;background:#ffffff;"></div>
+        <div style="position:relative;height:0;overflow:hidden;font-size:0;line-height:0;">
+          <div style="position:absolute;bottom:-10px;left:-10px;width:20px;height:20px;border-radius:50%;background:#ffffff;"></div>
+          <div style="position:absolute;bottom:-10px;right:-10px;width:20px;height:20px;border-radius:50%;background:#ffffff;"></div>
+        </div>
         <!--<![endif]-->`;
 
   return `
     <div dir="${escapeHtml(settings.direction)}" style="font-family:Arial,Helvetica,sans-serif;background:#ffffff;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;">
         <tr>
-          <td style="position:relative;background:${escapeHtml(settings.primaryColor)};padding:24px 16px 34px;text-align:center;color:#ffffff;">
+          <td style="position:relative;background:${primaryColor};padding:24px 16px 34px;text-align:center;color:#ffffff;">
             ${logoHtml}
             <div style="font-size:16px;font-weight:bold;">${escapeHtml(settings.businessName)}</div>
-            <p style="margin:8px 0 0;font-size:14px;">Hi ${escapeHtml(ticket.customerName)}, ${escapeHtml(settings.greeting)}</p>
+            <p style="margin:8px 0 0;font-size:14px;">${greetingHtml}</p>
             ${notchesHtml}
           </td>
         </tr>
         <tr>
           <td style="text-align:center;padding:24px 16px 8px;">
-            <img src="cid:${qrCid}" alt="Pickup QR code" width="300" height="300" />
+            <img src="cid:${qrCid}" alt="${escapeHtml(settings.qrAltText)}" width="300" height="300" style="max-width:100%;height:auto;display:block;margin:0 auto;" />
             <p style="font-size:13px;color:#555555;margin:8px 0 0;">${escapeHtml(settings.qrInstructions)}</p>
           </td>
         </tr>
         <tr>
           <td style="padding:16px 24px 24px;">
-            <p style="font-size:13px;color:#333333;text-align:${align};margin:0 0 8px;">${escapeHtml(settings.itemsLabel)}</p>
+            <p style="font-size:13px;color:#333333;text-align:${align};margin:0 0 8px;">${escapeHtml(settings.itemsLabel)}:</p>
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
               ${itemsHtml}
               <tr>
@@ -77,7 +87,7 @@ export function buildTicketEmailHtml(ticket: Ticket, qrCid: string, settings: Em
               </tr>
             </table>
             <p style="font-size:11px;color:#999999;margin:12px 0 0;text-align:${align};">
-              ${escapeHtml(settings.confirmationCodeLabel)}: ${escapeHtml(ticket.transactionCode)} &middot; ${escapeHtml(settings.dateLabel)}: ${formatDate(ticket.issuedAt)}
+              ${escapeHtml(settings.confirmationCodeLabel)}: ${escapeHtml(ticket.transactionCode)} &middot; ${escapeHtml(settings.dateLabel)}: ${formatDate(ticket.issuedAt, settings.utcOffsetMinutes)}
             </p>
           </td>
         </tr>

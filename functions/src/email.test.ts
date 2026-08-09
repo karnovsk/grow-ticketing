@@ -11,9 +11,9 @@ jest.mock('nodemailer', () => ({
 jest.mock('./settings', () => ({
   getEmailSettings: jest.fn().mockResolvedValue({
     subject: 'Your pickup ticket',
-    greeting: 'Thanks for your purchase!',
+    greeting: 'Hi {customerName}, thanks for your purchase!',
     qrInstructions: 'Show this QR code at pickup:',
-    itemsLabel: 'Items:',
+    itemsLabel: 'Items',
     businessName: 'Your Business',
     logoUrl: null,
     primaryColor: '#3a3a3a',
@@ -22,6 +22,9 @@ jest.mock('./settings', () => ({
     totalLabel: 'Total',
     dateLabel: 'Date',
     confirmationCodeLabel: 'Confirmation code',
+    qrAltText: 'Pickup QR code',
+    itemSeparator: 'x',
+    utcOffsetMinutes: 0,
   }),
 }));
 
@@ -44,9 +47,9 @@ const sampleTicket: Ticket = {
 
 const sampleSettings: EmailSettings = {
   subject: 'Your pickup ticket',
-  greeting: 'Thanks for your purchase!',
+  greeting: 'Hi {customerName}, thanks for your purchase!',
   qrInstructions: 'Show this QR code at pickup:',
-  itemsLabel: 'Items:',
+  itemsLabel: 'Items',
   businessName: 'Your Business',
   logoUrl: null,
   primaryColor: '#3a3a3a',
@@ -55,13 +58,16 @@ const sampleSettings: EmailSettings = {
   totalLabel: 'Total',
   dateLabel: 'Date',
   confirmationCodeLabel: 'Confirmation code',
+  qrAltText: 'Pickup QR code',
+  itemSeparator: 'x',
+  utcOffsetMinutes: 0,
 };
 
 describe('buildTicketEmailHtml', () => {
   test('includes customer name, settings copy, QR image cid reference, and item list', () => {
     const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', sampleSettings);
     expect(html).toContain('Jane Doe');
-    expect(html).toContain('Thanks for your purchase!');
+    expect(html).toContain('thanks for your purchase!');
     expect(html).toContain('src="cid:qr-cid-123"');
     expect(html).toContain('2 x Widget');
   });
@@ -108,13 +114,51 @@ describe('buildTicketEmailHtml branding', () => {
 
   test('omits the logo image entirely when logoUrl is null', () => {
     const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', { ...sampleSettings, logoUrl: null });
-    expect(html).not.toContain('width="48"');
+    const imgCount = (html.match(/<img/g) || []).length;
+    expect(imgCount).toBe(1);
+    expect(html).toContain('src="cid:qr-cid-123"');
   });
 
   test('wraps the punch-hole notch markup in MSO conditional comments so Outlook falls back to a plain band', () => {
     const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', sampleSettings);
     expect(html).toContain('<!--[if !mso]><!-->');
     expect(html).toContain('<!--<![endif]-->');
+  });
+
+  test('wraps the punch-hole notch circles in a zero-height overflow-hidden container as a Gmail fallback', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', sampleSettings);
+    expect(html).toContain('height:0;overflow:hidden');
+  });
+
+  test('escapes businessName and label fields', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', {
+      ...sampleSettings,
+      businessName: '<b>Acme</b>',
+      totalLabel: '<i>Total</i>',
+    });
+    expect(html).not.toContain('<b>Acme</b>');
+    expect(html).toContain('&lt;b&gt;Acme&lt;/b&gt;');
+    expect(html).not.toContain('<i>Total</i>');
+    expect(html).toContain('&lt;i&gt;Total&lt;/i&gt;');
+  });
+
+  test('falls back to the default color when primaryColor is not a valid hex value', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', {
+      ...sampleSettings,
+      primaryColor: 'red;background-image:url(javascript:alert(1))',
+    });
+    expect(html).toContain('background:#3a3a3a');
+    expect(html).not.toContain('background-image');
+  });
+
+  test('uses qrAltText for the QR image alt attribute', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', { ...sampleSettings, qrAltText: 'Scan to redeem' });
+    expect(html).toContain('alt="Scan to redeem"');
+  });
+
+  test('uses a custom itemSeparator', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', { ...sampleSettings, itemSeparator: '×' });
+    expect(html).toContain('2 × Widget');
   });
 });
 
@@ -131,9 +175,18 @@ describe('buildTicketEmailHtml receipt details', () => {
 
   test('formats issuedAt as DD.MM.YYYY', () => {
     const html = buildTicketEmailHtml(
-      { ...sampleTicket, issuedAt: Timestamp.fromDate(new Date(2026, 7, 9)) },
+      { ...sampleTicket, issuedAt: Timestamp.fromDate(new Date(Date.UTC(2026, 7, 9, 12, 0, 0))) },
       'qr-cid-123',
       sampleSettings,
+    );
+    expect(html).toContain('Date: 09.08.2026');
+  });
+
+  test('shifts the date by utcOffsetMinutes before formatting', () => {
+    const html = buildTicketEmailHtml(
+      { ...sampleTicket, issuedAt: Timestamp.fromDate(new Date('2026-08-08T23:00:00Z')) },
+      'qr-cid-123',
+      { ...sampleSettings, utcOffsetMinutes: 180 },
     );
     expect(html).toContain('Date: 09.08.2026');
   });
@@ -169,6 +222,14 @@ describe('buildTicketEmailHtml direction', () => {
     });
     expect(html).not.toContain('<script>alert(1)</script>');
     expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+  });
+
+  test('normalizes direction case for alignment even when the value has different casing', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', {
+      ...sampleSettings,
+      direction: 'RTL' as EmailSettings['direction'],
+    });
+    expect(html).toContain('text-align:right');
   });
 });
 
