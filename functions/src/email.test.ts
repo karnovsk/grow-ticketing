@@ -14,6 +14,14 @@ jest.mock('./settings', () => ({
     greeting: 'Thanks for your purchase!',
     qrInstructions: 'Show this QR code at pickup:',
     itemsLabel: 'Items:',
+    businessName: 'Your Business',
+    logoUrl: null,
+    primaryColor: '#3a3a3a',
+    direction: 'ltr',
+    currencySymbol: '$',
+    totalLabel: 'Total',
+    dateLabel: 'Date',
+    confirmationCodeLabel: 'Confirmation code',
   }),
 }));
 
@@ -39,6 +47,14 @@ const sampleSettings: EmailSettings = {
   greeting: 'Thanks for your purchase!',
   qrInstructions: 'Show this QR code at pickup:',
   itemsLabel: 'Items:',
+  businessName: 'Your Business',
+  logoUrl: null,
+  primaryColor: '#3a3a3a',
+  direction: 'ltr',
+  currencySymbol: '$',
+  totalLabel: 'Total',
+  dateLabel: 'Date',
+  confirmationCodeLabel: 'Confirmation code',
 };
 
 describe('buildTicketEmailHtml', () => {
@@ -68,6 +84,82 @@ describe('buildTicketEmailHtml', () => {
     expect(html).not.toContain('<script>');
     expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
     expect(html).toContain('Widget &lt;b&gt;&amp;&lt;/b&gt;');
+  });
+});
+
+describe('buildTicketEmailHtml branding', () => {
+  test('renders business name and primary color in the hero band', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', {
+      ...sampleSettings,
+      businessName: 'Acme Bakery',
+      primaryColor: '#1f6f5c',
+    });
+    expect(html).toContain('Acme Bakery');
+    expect(html).toContain('background:#1f6f5c');
+  });
+
+  test('renders the logo image when logoUrl is set', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', {
+      ...sampleSettings,
+      logoUrl: 'https://example.com/logo.png',
+    });
+    expect(html).toContain('src="https://example.com/logo.png"');
+  });
+
+  test('omits the logo image entirely when logoUrl is null', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', { ...sampleSettings, logoUrl: null });
+    expect(html).not.toContain('width="48"');
+  });
+
+  test('wraps the punch-hole notch markup in MSO conditional comments so Outlook falls back to a plain band', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', sampleSettings);
+    expect(html).toContain('<!--[if !mso]><!-->');
+    expect(html).toContain('<!--<![endif]-->');
+  });
+});
+
+describe('buildTicketEmailHtml receipt details', () => {
+  test('renders total (currencySymbol + amount) and confirmation code from ticket data', () => {
+    const html = buildTicketEmailHtml(
+      { ...sampleTicket, paymentSum: 145, transactionCode: 'TXN-8841' },
+      'qr-cid-123',
+      sampleSettings,
+    );
+    expect(html).toContain('Total: $145.00');
+    expect(html).toContain('Confirmation code: TXN-8841');
+  });
+
+  test('formats issuedAt as DD.MM.YYYY', () => {
+    const html = buildTicketEmailHtml(
+      { ...sampleTicket, issuedAt: Timestamp.fromDate(new Date(2026, 7, 9)) },
+      'qr-cid-123',
+      sampleSettings,
+    );
+    expect(html).toContain('Date: 09.08.2026');
+  });
+
+  test('escapes the transaction code', () => {
+    const html = buildTicketEmailHtml(
+      { ...sampleTicket, transactionCode: '<script>alert(1)</script>' },
+      'qr-cid-123',
+      sampleSettings,
+    );
+    expect(html).not.toContain('<script>alert(1)</script>');
+    expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+  });
+});
+
+describe('buildTicketEmailHtml direction', () => {
+  test('sets dir="rtl" and right-aligns text when direction is rtl', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', { ...sampleSettings, direction: 'rtl' });
+    expect(html).toContain('dir="rtl"');
+    expect(html).toContain('text-align:right');
+  });
+
+  test('sets dir="ltr" and left-aligns text when direction is ltr', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', { ...sampleSettings, direction: 'ltr' });
+    expect(html).toContain('dir="ltr"');
+    expect(html).toContain('text-align:left');
   });
 });
 
