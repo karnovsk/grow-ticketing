@@ -161,6 +161,15 @@ describe('buildTicketEmailHtml direction', () => {
     expect(html).toContain('dir="ltr"');
     expect(html).toContain('text-align:left');
   });
+
+  test('escapes a malformed direction value instead of breaking out of the attribute', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', {
+      ...sampleSettings,
+      direction: '"><script>alert(1)</script>' as EmailSettings['direction'],
+    });
+    expect(html).not.toContain('<script>alert(1)</script>');
+    expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+  });
 });
 
 describe('sendTicketEmail (resend)', () => {

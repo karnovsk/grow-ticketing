@@ -1,5 +1,4 @@
 import nodemailer from 'nodemailer';
-import * as FirebaseFirestore from 'firebase-admin/firestore';
 import { Ticket } from './types';
 import { EmailSettings, getEmailSettings } from './settings';
 
@@ -50,7 +49,7 @@ export function buildTicketEmailHtml(ticket: Ticket, qrCid: string, settings: Em
         <!--<![endif]-->`;
 
   return `
-    <div dir="${settings.direction}" style="font-family:Arial,Helvetica,sans-serif;background:#ffffff;">
+    <div dir="${escapeHtml(settings.direction)}" style="font-family:Arial,Helvetica,sans-serif;background:#ffffff;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;">
         <tr>
           <td style="position:relative;background:${escapeHtml(settings.primaryColor)};padding:24px 16px 34px;text-align:center;color:#ffffff;">
