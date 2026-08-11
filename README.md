@@ -121,7 +121,23 @@ To switch to Resend later:
 
 ## Customizing the ticket email's wording and branding
 
-The confirmation email's copy, branding, and layout details are all read from the `settings/emailTemplate` document in Firestore, not hardcoded — this keeps the repo generic across deployments. To customize them, open Firebase console → Firestore → create (or edit) a document at `settings/emailTemplate` with any of these fields (see `functions/src/settings.ts` for the full defaults):
+The confirmation email's copy, branding, and layout details are all read from the `settings/emailTemplate` document in Firestore, not hardcoded — this keeps the repo generic across deployments. Nothing below needs a redeploy or a code change; it's all done through the Firebase console.
+
+### Step 1: Upload a logo (optional)
+
+Skip this if you don't want a logo — `logoUrl` can just be left unset.
+
+1. Open **Firebase console → Storage** for the project (`https://console.firebase.google.com/project/<project-id>/storage`). If Storage hasn't been used before, click **Get started** and accept the defaults (location, default security rules — no rules changes needed for this).
+2. Click **Upload file** and pick the logo image.
+3. Click the uploaded file in the list, then click the link/chain icon next to its details (labeled something like **"Get download URL"**). This copies a URL shaped like:
+   ```
+   https://firebasestorage.googleapis.com/v0/b/<bucket>/o/<filename>?alt=media&token=<uuid>
+   ```
+   That URL embeds a secret access token, so it works publicly without changing Storage's default (auth-required) security rules, and keeps working indefinitely as long as the file stays in Storage.
+
+### Step 2: Write the settings document
+
+Open **Firebase console → Firestore Database**, and create (or edit) a document at the exact path `settings/emailTemplate` — that means a collection named `settings` containing a document with ID `emailTemplate`. Add any of the fields below (matching Firestore's own field type — most are `string`, `utcOffsetMinutes` is `number`); leave any field out to keep its built-in default (see `functions/src/settings.ts` for the full defaults). Changes take effect on the very next email sent — no redeploy needed.
 
 **Text (string fields):**
 - `subject` — email subject line
@@ -141,7 +157,7 @@ The confirmation email's copy, branding, and layout details are all read from th
 - `currencySymbol` — prefix for the total amount (default `"$"`)
 - `utcOffsetMinutes` — the business's local UTC offset in minutes (e.g. `180` for Israel Daylight Time, UTC+3), used only to compute the correct local calendar date shown on the receipt
 
-Any field left out keeps its built-in default. No redeploy is needed — changes take effect on the next email sent. Note: `primaryColor` is rendered as white text over the hero band, so avoid very light colors (no automatic contrast adjustment).
+Note: `primaryColor` is rendered as white text over the hero band, so avoid very light colors (no automatic contrast adjustment). `utcOffsetMinutes` is a fixed manual value, not DST-aware — if the deployment's local timezone observes daylight saving, it'll need updating twice a year to stay accurate.
 
 ## One-off Firestore reads/writes from a local script
 
