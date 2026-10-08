@@ -111,9 +111,6 @@ async function sendViaResend(ticket: Ticket, qrDataUri: string): Promise<boolean
     throw new Error('TICKET_EMAIL_FROM is not configured');
   }
   const settings = await getEmailSettings();
-  // NOTE: this provider is not currently reachable in production (no
-  // RESEND_API_KEY secret is declared/bound — see secrets.ts and the
-  // README's "Switching email providers" section).
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
