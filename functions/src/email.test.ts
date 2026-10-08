@@ -1,7 +1,7 @@
 import { Timestamp } from 'firebase-admin/firestore';
 import { buildTicketEmailHtml, sendTicketEmail, QR_IMAGE_CID } from './email';
 import { Ticket } from './types';
-import { EmailSettings } from './settings';
+import { EmailSettings, getEmailSettings } from './settings';
 
 const sendMailMock = jest.fn();
 jest.mock('nodemailer', () => ({
@@ -25,6 +25,7 @@ jest.mock('./settings', () => ({
     qrAltText: 'Pickup QR code',
     itemSeparator: 'x',
     utcOffsetMinutes: 0,
+    sendingEnabled: true,
   }),
 }));
 
@@ -61,6 +62,7 @@ const sampleSettings: EmailSettings = {
   qrAltText: 'Pickup QR code',
   itemSeparator: 'x',
   utcOffsetMinutes: 0,
+  sendingEnabled: true,
 };
 
 describe('buildTicketEmailHtml', () => {
@@ -344,5 +346,20 @@ describe('sendTicketEmail (gmail)', () => {
   test('throws when GMAIL_APP_PASSWORD is not configured', async () => {
     delete process.env.GMAIL_APP_PASSWORD;
     await expect(sendTicketEmail(sampleTicket, 'data:image/png;base64,ABC')).rejects.toThrow('GMAIL_APP_PASSWORD');
+  });
+});
+
+describe('sendTicketEmail (sending disabled via settings)', () => {
+  test('skips the provider call and returns false without sending', async () => {
+    (getEmailSettings as jest.Mock).mockResolvedValueOnce({ ...sampleSettings, sendingEnabled: false });
+    const fetchMock = jest.fn();
+    global.fetch = fetchMock as unknown as typeof fetch;
+    sendMailMock.mockReset();
+
+    const result = await sendTicketEmail(sampleTicket, 'data:image/png;base64,ABC');
+
+    expect(result).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(sendMailMock).not.toHaveBeenCalled();
   });
 });

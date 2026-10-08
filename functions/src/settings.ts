@@ -16,6 +16,7 @@ export interface EmailSettings {
   qrAltText: string;
   itemSeparator: string;
   utcOffsetMinutes: number;
+  sendingEnabled: boolean;
 }
 
 const DEFAULT_EMAIL_SETTINGS: EmailSettings = {
@@ -34,6 +35,7 @@ const DEFAULT_EMAIL_SETTINGS: EmailSettings = {
   qrAltText: 'Pickup QR code',
   itemSeparator: 'x',
   utcOffsetMinutes: 0,
+  sendingEnabled: true,
 };
 
 const STRING_FIELDS: (keyof EmailSettings)[] = [
@@ -70,6 +72,9 @@ export async function getEmailSettings(): Promise<EmailSettings> {
   }
   if (typeof data.utcOffsetMinutes === 'number' && Number.isFinite(data.utcOffsetMinutes)) {
     merged.utcOffsetMinutes = data.utcOffsetMinutes;
+  }
+  if (typeof data.sendingEnabled === 'boolean') {
+    merged.sendingEnabled = data.sendingEnabled;
   }
 
   return merged;

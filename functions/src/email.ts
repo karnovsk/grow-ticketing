@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { logger } from 'firebase-functions/v2';
 import { Ticket } from './types';
 import { EmailSettings, getEmailSettings } from './settings';
 
@@ -171,6 +172,13 @@ async function sendViaGmail(ticket: Ticket, qrDataUri: string): Promise<boolean>
 }
 
 export async function sendTicketEmail(ticket: Ticket, qrDataUri: string): Promise<boolean> {
+  const settings = await getEmailSettings();
+  if (!settings.sendingEnabled) {
+    logger.info('Email sending disabled via settings/emailTemplate.sendingEnabled; skipping', {
+      ticketId: ticket.ticketId,
+    });
+    return false;
+  }
   if (process.env.EMAIL_PROVIDER === 'gmail') {
     return sendViaGmail(ticket, qrDataUri);
   }

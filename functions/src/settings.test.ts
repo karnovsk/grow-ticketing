@@ -72,4 +72,21 @@ describe('getEmailSettings', () => {
     const settings = await getEmailSettings();
     expect(settings.utcOffsetMinutes).toBe(180);
   });
+
+  test('defaults sendingEnabled to true when no settings document exists', async () => {
+    const settings = await getEmailSettings();
+    expect(settings.sendingEnabled).toBe(true);
+  });
+
+  test('overrides sendingEnabled to false from the settings document', async () => {
+    await db.collection('settings').doc('emailTemplate').set({ sendingEnabled: false });
+    const settings = await getEmailSettings();
+    expect(settings.sendingEnabled).toBe(false);
+  });
+
+  test('falls back to sendingEnabled default when the field is not a boolean', async () => {
+    await db.collection('settings').doc('emailTemplate').set({ sendingEnabled: 'nope' });
+    const settings = await getEmailSettings();
+    expect(settings.sendingEnabled).toBe(true);
+  });
 });
