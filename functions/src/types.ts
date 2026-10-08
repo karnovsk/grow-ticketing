@@ -20,6 +20,10 @@ export interface Ticket {
   emailStatus: 'sent' | 'failed';
 }
 
+// Normalized shape produced by webhookHandler's parsePayload. Grow's actual
+// "Payment Links" webhook call doesn't match this directly (paymentSum is a
+// string, there's no productData array — see parsePayload) — this is what
+// it gets mapped onto before reaching ticket creation.
 export interface GrowWebhookPayload {
   webhookKey: string;
   transactionCode: string;
@@ -27,5 +31,5 @@ export interface GrowWebhookPayload {
   payerFullName?: string;
   payerEmail?: string;
   payerPhone?: string;
-  productData?: TicketItem[];
+  productData: TicketItem[];
 }

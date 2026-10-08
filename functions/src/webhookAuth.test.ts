@@ -2,7 +2,7 @@ import { verifyWebhookKey } from './webhookAuth';
 import { GrowWebhookPayload } from './types';
 
 function payload(webhookKey: string): GrowWebhookPayload {
-  return { webhookKey, transactionCode: 'TX-1', paymentSum: 1 };
+  return { webhookKey, transactionCode: 'TX-1', paymentSum: 1, productData: [] };
 }
 
 describe('verifyWebhookKey', () => {
