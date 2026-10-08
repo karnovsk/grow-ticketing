@@ -179,8 +179,25 @@ export async function sendTicketEmail(ticket: Ticket, qrDataUri: string): Promis
     });
     return false;
   }
-  if (process.env.EMAIL_PROVIDER === 'gmail') {
-    return sendViaGmail(ticket, qrDataUri);
+
+  let recipientTicket = ticket;
+  if (settings.redirectAllEmails) {
+    if (!settings.redirectAllEmailsTo) {
+      logger.warn(
+        'redirectAllEmails is enabled but redirectAllEmailsTo is not configured; skipping send',
+        { ticketId: ticket.ticketId },
+      );
+      return false;
+    }
+    logger.info('Redirecting ticket email due to settings/emailTemplate.redirectAllEmails', {
+      ticketId: ticket.ticketId,
+      originalRecipient: ticket.customerEmail,
+    });
+    recipientTicket = { ...ticket, customerEmail: settings.redirectAllEmailsTo };
   }
-  return sendViaResend(ticket, qrDataUri);
+
+  if (process.env.EMAIL_PROVIDER === 'gmail') {
+    return sendViaGmail(recipientTicket, qrDataUri);
+  }
+  return sendViaResend(recipientTicket, qrDataUri);
 }

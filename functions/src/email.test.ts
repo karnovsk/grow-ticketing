@@ -26,6 +26,8 @@ jest.mock('./settings', () => ({
     itemSeparator: 'x',
     utcOffsetMinutes: 0,
     sendingEnabled: true,
+    redirectAllEmails: false,
+    redirectAllEmailsTo: '',
   }),
 }));
 
@@ -63,6 +65,8 @@ const sampleSettings: EmailSettings = {
   itemSeparator: 'x',
   utcOffsetMinutes: 0,
   sendingEnabled: true,
+  redirectAllEmails: false,
+  redirectAllEmailsTo: '',
 };
 
 describe('buildTicketEmailHtml', () => {
@@ -361,5 +365,67 @@ describe('sendTicketEmail (sending disabled via settings)', () => {
     expect(result).toBe(false);
     expect(fetchMock).not.toHaveBeenCalled();
     expect(sendMailMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('sendTicketEmail (redirectAllEmails)', () => {
+  const originalProvider = process.env.EMAIL_PROVIDER;
+  const originalUser = process.env.GMAIL_USER;
+  const originalPassword = process.env.GMAIL_APP_PASSWORD;
+
+  beforeEach(() => {
+    process.env.EMAIL_PROVIDER = 'gmail';
+    process.env.GMAIL_USER = 'tickets@gmail.com';
+    process.env.GMAIL_APP_PASSWORD = 'test-app-password';
+    sendMailMock.mockReset();
+  });
+
+  afterEach(() => {
+    process.env.EMAIL_PROVIDER = originalProvider;
+    process.env.GMAIL_USER = originalUser;
+    process.env.GMAIL_APP_PASSWORD = originalPassword;
+  });
+
+  test('sends to the configured redirect address instead of the buyer, leaving the rest of the email unchanged', async () => {
+    (getEmailSettings as jest.Mock).mockResolvedValueOnce({
+      ...sampleSettings,
+      redirectAllEmails: true,
+      redirectAllEmailsTo: 'test-inbox@example.com',
+    });
+    sendMailMock.mockResolvedValue(undefined);
+
+    const result = await sendTicketEmail(sampleTicket, 'data:image/png;base64,ABC');
+
+    expect(result).toBe(true);
+    const call = sendMailMock.mock.calls[0][0];
+    expect(call.to).toBe('test-inbox@example.com');
+    expect(call.html).toContain('Jane Doe');
+  });
+
+  test('skips sending when redirectAllEmails is enabled but redirectAllEmailsTo is not configured', async () => {
+    (getEmailSettings as jest.Mock).mockResolvedValueOnce({
+      ...sampleSettings,
+      redirectAllEmails: true,
+      redirectAllEmailsTo: '',
+    });
+
+    const result = await sendTicketEmail(sampleTicket, 'data:image/png;base64,ABC');
+
+    expect(result).toBe(false);
+    expect(sendMailMock).not.toHaveBeenCalled();
+  });
+
+  test('does not redirect when redirectAllEmails is false', async () => {
+    (getEmailSettings as jest.Mock).mockResolvedValueOnce({
+      ...sampleSettings,
+      redirectAllEmails: false,
+      redirectAllEmailsTo: 'test-inbox@example.com',
+    });
+    sendMailMock.mockResolvedValue(undefined);
+
+    await sendTicketEmail(sampleTicket, 'data:image/png;base64,ABC');
+
+    const call = sendMailMock.mock.calls[0][0];
+    expect(call.to).toBe('jane@example.com');
   });
 });

@@ -17,6 +17,8 @@ export interface EmailSettings {
   itemSeparator: string;
   utcOffsetMinutes: number;
   sendingEnabled: boolean;
+  redirectAllEmails: boolean;
+  redirectAllEmailsTo: string;
 }
 
 const DEFAULT_EMAIL_SETTINGS: EmailSettings = {
@@ -36,6 +38,8 @@ const DEFAULT_EMAIL_SETTINGS: EmailSettings = {
   itemSeparator: 'x',
   utcOffsetMinutes: 0,
   sendingEnabled: true,
+  redirectAllEmails: false,
+  redirectAllEmailsTo: '',
 };
 
 const STRING_FIELDS: (keyof EmailSettings)[] = [
@@ -52,6 +56,7 @@ const STRING_FIELDS: (keyof EmailSettings)[] = [
   'confirmationCodeLabel',
   'qrAltText',
   'itemSeparator',
+  'redirectAllEmailsTo',
 ];
 
 export async function getEmailSettings(): Promise<EmailSettings> {
@@ -75,6 +80,9 @@ export async function getEmailSettings(): Promise<EmailSettings> {
   }
   if (typeof data.sendingEnabled === 'boolean') {
     merged.sendingEnabled = data.sendingEnabled;
+  }
+  if (typeof data.redirectAllEmails === 'boolean') {
+    merged.redirectAllEmails = data.redirectAllEmails;
   }
 
   return merged;

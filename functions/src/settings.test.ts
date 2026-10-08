@@ -89,4 +89,20 @@ describe('getEmailSettings', () => {
     const settings = await getEmailSettings();
     expect(settings.sendingEnabled).toBe(true);
   });
+
+  test('defaults redirectAllEmails to false and redirectAllEmailsTo to empty', async () => {
+    const settings = await getEmailSettings();
+    expect(settings.redirectAllEmails).toBe(false);
+    expect(settings.redirectAllEmailsTo).toBe('');
+  });
+
+  test('overrides redirectAllEmails and redirectAllEmailsTo from the settings document', async () => {
+    await db.collection('settings').doc('emailTemplate').set({
+      redirectAllEmails: true,
+      redirectAllEmailsTo: 'test-inbox@example.com',
+    });
+    const settings = await getEmailSettings();
+    expect(settings.redirectAllEmails).toBe(true);
+    expect(settings.redirectAllEmailsTo).toBe('test-inbox@example.com');
+  });
 });
