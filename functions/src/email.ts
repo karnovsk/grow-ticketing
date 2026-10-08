@@ -125,7 +125,6 @@ export function buildTicketEmailHtml(ticket: Ticket, qrCid: string, settings: Em
           <td style="text-align:center;padding:24px 16px 8px;">
             <img src="cid:${qrCid}" alt="${escapeHtml(settings.qrAltText)}" width="${QR_DISPLAY_SIZE}" height="${QR_DISPLAY_SIZE}" style="max-width:100%;height:auto;display:block;margin:0 auto;" />
             <p style="font-size:15px;line-height:1.5;color:#333333;margin:8px 0 0;">${escapeHtml(settings.qrInstructions)}</p>
-            <p style="font-size:16px;font-weight:bold;color:${DARK_TEXT_COLOR};margin:12px 0 0;">${escapeHtml(settings.confirmationCodeLabel)}: ${escapeHtml(ticket.transactionCode)}</p>
           </td>
         </tr>
         <tr>
@@ -140,7 +139,7 @@ export function buildTicketEmailHtml(ticket: Ticket, qrCid: string, settings: Em
               </tr>
             </table>
             <p style="font-size:13px;color:#555555;margin:12px 0 0;text-align:${align};">
-              ${escapeHtml(settings.dateLabel)}: ${formatDate(ticket.issuedAt, settings.utcOffsetMinutes)}
+              ${escapeHtml(settings.confirmationCodeLabel)}: ${escapeHtml(ticket.transactionCode)} &middot; ${escapeHtml(settings.dateLabel)}: ${formatDate(ticket.issuedAt, settings.utcOffsetMinutes)}
             </p>
           </td>
         </tr>

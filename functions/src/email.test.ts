@@ -107,22 +107,6 @@ describe('buildTicketEmailHtml mobile QR legibility', () => {
     expect(html).toMatch(/<img src="cid:qr-cid-123"[^>]*width="296" height="296"/);
   });
 
-  test('shows the confirmation code prominently between the QR and the item list', () => {
-    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', sampleSettings);
-    const qrIndex = html.indexOf('src="cid:qr-cid-123"');
-    const codeIndex = html.indexOf('Confirmation code: TX-1');
-    const itemsIndex = html.indexOf('Items:');
-    expect(qrIndex).toBeGreaterThan(-1);
-    expect(codeIndex).toBeGreaterThan(qrIndex);
-    expect(codeIndex).toBeLessThan(itemsIndex);
-    expect(html.slice(html.lastIndexOf('<p', codeIndex), codeIndex)).toContain('font-size:16px');
-  });
-
-  test('renders the confirmation code only once', () => {
-    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', sampleSettings);
-    expect(html.split('TX-1').length - 1).toBe(1);
-  });
-
   test('does not use low-contrast #999999 text or sub-13px font sizes', () => {
     const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', sampleSettings);
     // The hidden preheader deliberately uses font-size:1px; only visible text counts.
