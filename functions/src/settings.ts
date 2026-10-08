@@ -2,6 +2,7 @@ import { db } from './admin';
 
 export interface EmailSettings {
   subject: string;
+  preheader: string;
   greeting: string;
   qrInstructions: string;
   itemsLabel: string;
@@ -23,8 +24,9 @@ export interface EmailSettings {
 
 const DEFAULT_EMAIL_SETTINGS: EmailSettings = {
   subject: 'Your pickup ticket',
+  preheader: 'Your ticket QR code is inside. Show it at pickup.',
   greeting: 'Hi {customerName}, thanks for your purchase!',
-  qrInstructions: 'Show this QR code at pickup:',
+  qrInstructions: 'Show this QR code at pickup',
   itemsLabel: 'Items',
   businessName: 'Your Business',
   logoUrl: null,
@@ -44,6 +46,7 @@ const DEFAULT_EMAIL_SETTINGS: EmailSettings = {
 
 const STRING_FIELDS: (keyof EmailSettings)[] = [
   'subject',
+  'preheader',
   'greeting',
   'qrInstructions',
   'itemsLabel',

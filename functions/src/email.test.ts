@@ -11,8 +11,9 @@ jest.mock('nodemailer', () => ({
 jest.mock('./settings', () => ({
   getEmailSettings: jest.fn().mockResolvedValue({
     subject: 'Your pickup ticket',
+    preheader: 'Your ticket QR code is inside. Show it at pickup.',
     greeting: 'Hi {customerName}, thanks for your purchase!',
-    qrInstructions: 'Show this QR code at pickup:',
+    qrInstructions: 'Show this QR code at pickup',
     itemsLabel: 'Items',
     businessName: 'Your Business',
     logoUrl: null,
@@ -50,8 +51,9 @@ const sampleTicket: Ticket = {
 
 const sampleSettings: EmailSettings = {
   subject: 'Your pickup ticket',
+  preheader: 'Your ticket QR code is inside. Show it at pickup.',
   greeting: 'Hi {customerName}, thanks for your purchase!',
-  qrInstructions: 'Show this QR code at pickup:',
+  qrInstructions: 'Show this QR code at pickup',
   itemsLabel: 'Items',
   businessName: 'Your Business',
   logoUrl: null,
@@ -96,6 +98,87 @@ describe('buildTicketEmailHtml', () => {
     expect(html).not.toContain('<script>');
     expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
     expect(html).toContain('Widget &lt;b&gt;&amp;&lt;/b&gt;');
+  });
+});
+
+describe('buildTicketEmailHtml mobile QR legibility', () => {
+  test('displays the QR at half its 592px source size so it stays sharp on 2x screens', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', sampleSettings);
+    expect(html).toMatch(/<img src="cid:qr-cid-123"[^>]*width="296" height="296"/);
+  });
+
+  test('shows the confirmation code prominently between the QR and the item list', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', sampleSettings);
+    const qrIndex = html.indexOf('src="cid:qr-cid-123"');
+    const codeIndex = html.indexOf('Confirmation code: TX-1');
+    const itemsIndex = html.indexOf('Items:');
+    expect(qrIndex).toBeGreaterThan(-1);
+    expect(codeIndex).toBeGreaterThan(qrIndex);
+    expect(codeIndex).toBeLessThan(itemsIndex);
+    expect(html.slice(html.lastIndexOf('<p', codeIndex), codeIndex)).toContain('font-size:16px');
+  });
+
+  test('renders the confirmation code only once', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', sampleSettings);
+    expect(html.split('TX-1').length - 1).toBe(1);
+  });
+
+  test('does not use low-contrast #999999 text or sub-13px font sizes', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', sampleSettings);
+    // The hidden preheader deliberately uses font-size:1px; only visible text counts.
+    const visibleHtml = html.slice(html.indexOf('<div dir='));
+    expect(visibleHtml).not.toContain('#999999');
+    expect(visibleHtml).not.toMatch(/font-size:(?:[0-9]|1[0-2])px/);
+  });
+
+  test('includes a viewport meta tag', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', sampleSettings);
+    expect(html).toContain('<meta name="viewport" content="width=device-width, initial-scale=1"');
+  });
+});
+
+describe('buildTicketEmailHtml preheader', () => {
+  test('renders the preheader as hidden text before the visible content', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', sampleSettings);
+    const preheaderIndex = html.indexOf('Your ticket QR code is inside.');
+    expect(preheaderIndex).toBeGreaterThan(-1);
+    expect(preheaderIndex).toBeLessThan(html.indexOf('Your Business'));
+    expect(html.slice(html.lastIndexOf('<div', preheaderIndex), preheaderIndex)).toContain('display:none');
+  });
+
+  test('escapes the preheader', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', {
+      ...sampleSettings,
+      preheader: '<b>hi</b>',
+    });
+    expect(html).not.toContain('<b>hi</b>');
+    expect(html).toContain('&lt;b&gt;hi&lt;/b&gt;');
+  });
+});
+
+describe('buildTicketEmailHtml hero text contrast', () => {
+  test('uses white hero text on a dark primary color', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', { ...sampleSettings, primaryColor: '#1f3a5c' });
+    expect(html).toContain('background:#1f3a5c;padding:24px 16px 34px;text-align:center;color:#ffffff;');
+  });
+
+  test('switches to dark hero text on a light primary color', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', { ...sampleSettings, primaryColor: '#f5d76e' });
+    expect(html).toContain('background:#f5d76e;padding:24px 16px 34px;text-align:center;color:#1a1a1a;');
+  });
+
+  test('handles 3-digit hex shorthand', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', { ...sampleSettings, primaryColor: '#ff0' });
+    expect(html).toContain('color:#1a1a1a;');
+  });
+});
+
+describe('buildTicketEmailHtml dark mode', () => {
+  test('hides the white punch-hole notches in dark mode', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', sampleSettings);
+    expect(html).toContain('class="ticket-notches"');
+    expect(html).toMatch(/@media \(prefers-color-scheme: dark\)\s*\{\s*\.ticket-notches\s*\{\s*display:none !important;/);
+    expect(html).toContain('[data-ogsc] .ticket-notches');
   });
 });
 
