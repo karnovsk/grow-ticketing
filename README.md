@@ -30,8 +30,8 @@ Issues an emailed QR-code pickup ticket when a Grow purchase webhook fires, and 
 
 Pick one:
 
-- **Gmail (default, no domain required)** — use an existing Gmail or Google Workspace account. Enable 2-Step Verification on it, then create an [App Password](https://myaccount.google.com/apppasswords) (Google Account → Security → 2-Step Verification → App passwords). Gmail's free sending cap is 500/day, well above this project's expected volume.
-- **Resend (upgrade path, needs a domain)** — create a [Resend](https://resend.com) account, add and verify a sending domain (DNS records), and create an API key. Use this once you have a domain and want a dedicated sending address instead of a Gmail account. Note: this path is currently dormant in the code — see the "Switching email providers" note at the end of this section.
+- **Resend (default, needs a domain)** — create a [Resend](https://resend.com) account, add and verify a sending domain (DNS records), and create an API key. This is the active provider in the code.
+- **Gmail (fallback, no domain required)** — use an existing Gmail or Google Workspace account. Enable 2-Step Verification on it, then create an [App Password](https://myaccount.google.com/apppasswords) (Google Account → Security → 2-Step Verification → App passwords). Gmail's free sending cap is 500/day, well above this project's expected volume. Note: this path is currently dormant in the code — see the "Switching email providers" note at the end of this section.
 
 ### 3. Contact Grow support
 
@@ -45,7 +45,7 @@ Per `https://developers.grow.business/docs/webhooks`, ask Grow support to enable
 
 ```bash
 ./functions/node_modules/.bin/firebase functions:secrets:set GROW_WEBHOOK_KEY
-./functions/node_modules/.bin/firebase functions:secrets:set GMAIL_APP_PASSWORD
+./functions/node_modules/.bin/firebase functions:secrets:set RESEND_API_KEY
 ```
 
 Each command prompts you to type/paste the value on a separate line — **run these directly in your own interactive terminal**, not piped through a script or agent, and never pass the value as a command-line argument. Both leave the secret exposed in shell history or logs, and the command doesn't accept it as an argument anyway (it'll error with "Secret Payload cannot be empty").
@@ -111,13 +111,13 @@ You can also deploy targets individually, e.g. `--only firestore` (shorthand for
 
 ### Switching email providers
 
-Only one provider's secret is wired up at a time. Right now `functions/src/secrets.ts` only declares `GROW_WEBHOOK_KEY` and `GMAIL_APP_PASSWORD` — the `RESEND_API_KEY` declaration was deliberately removed because Firebase's deploy step prompts for a value for *every* `defineSecret()` found in the built codebase, even ones no function actually uses; leaving an unused declaration in place blocks deploys with an empty-value prompt.
+Only one provider's secret is wired up at a time. Right now `functions/src/secrets.ts` only declares `GROW_WEBHOOK_KEY` and `RESEND_API_KEY` — the `GMAIL_APP_PASSWORD` declaration was deliberately removed because Firebase's deploy step prompts for a value for *every* `defineSecret()` found in the built codebase, even ones no function actually uses; leaving an unused declaration in place blocks deploys with an empty-value prompt.
 
-To switch to Resend later:
-1. Add back `export const resendApiKeySecret = defineSecret('RESEND_API_KEY');` to `functions/src/secrets.ts`.
-2. Bind it in `functions/src/index.ts`'s `secrets` arrays for `growWebhook` and `resendTicketEmailCallable` (in place of, or alongside, `gmailAppPasswordSecret`).
-3. Set `functions/.env`'s `EMAIL_PROVIDER=resend` and `TICKET_EMAIL_FROM`.
-4. Run `firebase functions:secrets:set RESEND_API_KEY` and redeploy.
+To switch back to Gmail later:
+1. Add back `export const gmailAppPasswordSecret = defineSecret('GMAIL_APP_PASSWORD');` to `functions/src/secrets.ts`.
+2. Bind it in `functions/src/index.ts`'s `secrets` arrays for `growWebhook` and `resendTicketEmailCallable` (in place of, or alongside, `resendApiKeySecret`).
+3. Set `functions/.env`'s `EMAIL_PROVIDER=gmail` and `GMAIL_USER`.
+4. Run `firebase functions:secrets:set GMAIL_APP_PASSWORD` and redeploy.
 
 ## Customizing the ticket email's wording and branding
 
