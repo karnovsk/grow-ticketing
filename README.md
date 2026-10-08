@@ -30,7 +30,7 @@ Issues an emailed QR-code pickup ticket when a Grow purchase webhook fires, and 
 
 Pick one:
 
-- **Resend (default, needs a domain)** — create a [Resend](https://resend.com) account, add and verify a sending domain (DNS records), and create an API key. This is the active provider in the code.
+- **Resend (default, needs a domain)** — create a [Resend](https://resend.com) account, add and verify a sending domain (DNS records), and create an API key. This is the active provider in the code. **Important:** Resend's free tier caps out at 100 emails/day and 3,000/month — each ticket purchase sends one. If the venue's volume approaches or exceeds that, emails will start silently failing (`emailStatus: "failed"` on the ticket) until the next day/month's quota resets. Watch actual usage against these limits and either upgrade to a paid Resend plan or switch providers before you get there.
 - **Gmail (fallback, no domain required)** — use an existing Gmail or Google Workspace account. Enable 2-Step Verification on it, then create an [App Password](https://myaccount.google.com/apppasswords) (Google Account → Security → 2-Step Verification → App passwords). Gmail's free sending cap is 500/day, well above this project's expected volume. Note: this path is currently dormant in the code — see the "Switching email providers" note at the end of this section.
 
 ### 3. Contact Grow support
