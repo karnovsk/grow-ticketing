@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "vite build",
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && vite build && node -e \"require('fs').copyFileSync('robots.txt','dist/robots.txt')\"",
     "test": "vitest run"
   },
   "dependencies": {

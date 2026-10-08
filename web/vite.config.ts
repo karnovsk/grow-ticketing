@@ -8,6 +8,14 @@ export default defineConfig({
   // "connection not private" warning to click through — dev-only, not used
   // for the production build/Hosting.
   plugins: [basicSsl()],
+  // The staff app is only served at habaronit.com/staff (the domain root
+  // redirects elsewhere — see firebase.json), so assets must resolve under
+  // /staff/ and the build output must physically live in a "staff"
+  // subfolder of the Hosting public dir (web/dist).
+  base: '/staff/',
+  build: {
+    outDir: 'dist/staff',
+  },
   test: {
     environment: 'jsdom',
   },

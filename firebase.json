@@ -9,7 +9,16 @@
   "hosting": {
     "public": "web/dist",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-    "rewrites": [{ "source": "**", "destination": "/index.html" }],
+    "rewrites": [
+      { "source": "/staff/**", "destination": "/staff/index.html" },
+      { "source": "/", "function": "rootRedirect" }
+    ],
+    "headers": [
+      {
+        "source": "**",
+        "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+      }
+    ],
     "predeploy": ["npm --prefix web run build"]
   },
   "firestore": {
