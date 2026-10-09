@@ -69,6 +69,10 @@ export async function updateEmailStatus(ticketId: string, status: 'sent' | 'fail
   await db.collection(COLLECTION).doc(ticketId).update({ emailStatus: status });
 }
 
+export async function updateCustomerEmail(ticketId: string, customerEmail: string): Promise<void> {
+  await db.collection(COLLECTION).doc(ticketId).update({ customerEmail });
+}
+
 // validationNote is an append-only log, not a single overwritable field — a
 // ticket can cycle issued -> validated -> invalidated -> validated again, and
 // each step's note (staff-typed or system-generated) should stack onto the

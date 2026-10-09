@@ -1,4 +1,4 @@
-import { createTicketIfNew } from './ticketService';
+import { createTicketIfNew, getTicketById } from './ticketService';
 import { handleValidateTicket, handleResendTicketEmail, handleInvalidateTicket } from './callables';
 import { sendTicketEmail } from './email';
 import { clearFirestoreEmulator } from './testHelpers';
@@ -108,5 +108,37 @@ describe('handleResendTicketEmail', () => {
     (sendTicketEmail as jest.Mock).mockResolvedValueOnce(false);
     const result = await handleResendTicketEmail({ ticketId: ticket.ticketId }, { uid: 'staff-1', email: 'staff1@example.com' });
     expect(result.sent).toBe(false);
+  });
+
+  test('sends to an edited address and persists it on success', async () => {
+    const { ticket } = await createTicketIfNew({ ...sampleInput, transactionCode: 'TX-212' });
+    (sendTicketEmail as jest.Mock).mockClear();
+    const result = await handleResendTicketEmail(
+      { ticketId: ticket.ticketId, email: ' fixed@example.com ' },
+      { uid: 'staff-1', email: 'staff1@example.com' },
+    );
+    expect(result).toEqual({ sent: true, email: 'fixed@example.com' });
+    expect((sendTicketEmail as jest.Mock).mock.calls[0][0].customerEmail).toBe('fixed@example.com');
+    expect((await getTicketById(ticket.ticketId))?.customerEmail).toBe('fixed@example.com');
+  });
+
+  test('keeps the original address when sending to an edited one fails', async () => {
+    const { ticket } = await createTicketIfNew({ ...sampleInput, transactionCode: 'TX-213' });
+    (sendTicketEmail as jest.Mock).mockResolvedValueOnce(false);
+    const result = await handleResendTicketEmail(
+      { ticketId: ticket.ticketId, email: 'fixed@example.com' },
+      { uid: 'staff-1', email: 'staff1@example.com' },
+    );
+    expect(result).toEqual({ sent: false, email: 'jane@example.com' });
+    expect((await getTicketById(ticket.ticketId))?.customerEmail).toBe('jane@example.com');
+  });
+
+  test('rejects a malformed address without sending', async () => {
+    const { ticket } = await createTicketIfNew({ ...sampleInput, transactionCode: 'TX-214' });
+    (sendTicketEmail as jest.Mock).mockClear();
+    await expect(
+      handleResendTicketEmail({ ticketId: ticket.ticketId, email: 'not-an-email' }, { uid: 'staff-1', email: 'staff1@example.com' }),
+    ).rejects.toThrow('invalid_email');
+    expect(sendTicketEmail).not.toHaveBeenCalled();
   });
 });

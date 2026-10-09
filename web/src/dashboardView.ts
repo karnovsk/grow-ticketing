@@ -149,33 +149,156 @@ function fieldRow(text: string): HTMLParagraphElement {
   return p;
 }
 
-function renderEmailStatusRow(ticket: TicketRecord): HTMLParagraphElement {
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function emailStatusText(status: TicketRecord['emailStatus']): string {
+  return t('dashboardDetailEmailStatus', {
+    value: t(status === 'sent' ? 'dashboardDetailEmailStatusSent' : 'dashboardDetailEmailStatusFailed'),
+  });
+}
+
+// Resend is offered for every ticket not yet picked up — not just failed
+// sends — since "sent" only means the provider accepted it, not that the
+// buyer typed their address right or found it outside spam. Picked-up
+// tickets keep the button only if their last send failed.
+function renderEmailSection(
+  ticket: TicketRecord,
+  customerEmailRow: HTMLParagraphElement,
+  onChanged: () => void,
+): HTMLDivElement {
+  const section = document.createElement('div');
+  section.className = 'modal-email';
+
   const row = document.createElement('p');
   row.className = 'modal-email-status';
   const label = document.createElement('span');
-  label.textContent = t('dashboardDetailEmailStatus', {
-    value: t(ticket.emailStatus === 'sent' ? 'dashboardDetailEmailStatusSent' : 'dashboardDetailEmailStatusFailed'),
-  });
+  label.textContent = emailStatusText(ticket.emailStatus);
   row.appendChild(label);
+  section.appendChild(row);
 
-  if (ticket.emailStatus === 'failed') {
-    const resendButton = document.createElement('button');
-    resendButton.type = 'button';
-    resendButton.className = 'btn btn-secondary btn-small';
-    resendButton.textContent = t('dashboardResendButton');
-    resendButton.addEventListener('click', async () => {
-      resendButton.disabled = true;
-      const result = (await resendTicketEmail(ticket.ticketId)) as { sent: boolean };
-      label.textContent = t('dashboardDetailEmailStatus', {
-        value: t(result.sent ? 'dashboardDetailEmailStatusSent' : 'dashboardDetailEmailStatusFailed'),
-      });
-      resendButton.textContent = result.sent ? t('dashboardResendSuccess') : t('dashboardResendFailure');
-      resendButton.disabled = result.sent;
-    });
-    row.appendChild(resendButton);
+  const confirmation = document.createElement('p');
+  confirmation.className = 'resend-confirmation';
+  confirmation.setAttribute('role', 'status');
+  section.appendChild(confirmation);
+
+  if (ticket.status === 'validated' && ticket.emailStatus !== 'failed') {
+    return section;
   }
 
-  return row;
+  const resendButton = document.createElement('button');
+  resendButton.type = 'button';
+  resendButton.className = 'btn btn-secondary btn-small';
+  resendButton.textContent = t('dashboardResendButton');
+  resendButton.setAttribute('aria-expanded', 'false');
+  row.appendChild(resendButton);
+
+  const form = document.createElement('form');
+  form.className = 'resend-form';
+  form.hidden = true;
+  form.noValidate = true;
+  const formId = `resend-${ticket.ticketId}`;
+  resendButton.setAttribute('aria-controls', formId);
+  form.id = formId;
+
+  const fieldLabel = document.createElement('label');
+  fieldLabel.htmlFor = `${formId}-email`;
+  fieldLabel.textContent = t('dashboardResendToLabel');
+  const input = document.createElement('input');
+  input.id = `${formId}-email`;
+  input.type = 'email';
+  input.dir = 'ltr';
+  input.autocomplete = 'off';
+  input.spellcheck = false;
+  input.setAttribute('autocapitalize', 'off');
+  const error = document.createElement('p');
+  error.className = 'field-error';
+  error.id = `${formId}-error`;
+  input.setAttribute('aria-describedby', error.id);
+
+  const buttons = document.createElement('div');
+  buttons.className = 'resend-form-buttons';
+  const sendButton = document.createElement('button');
+  sendButton.type = 'submit';
+  sendButton.className = 'btn btn-primary';
+  sendButton.textContent = t('dashboardResendSendButton');
+  const cancelButton = document.createElement('button');
+  cancelButton.type = 'button';
+  cancelButton.className = 'btn btn-secondary';
+  cancelButton.textContent = t('dashboardResendCancel');
+  buttons.append(sendButton, cancelButton);
+
+  form.append(fieldLabel, input, error, buttons);
+  section.appendChild(form);
+
+  function setOpen(open: boolean) {
+    form.hidden = !open;
+    resendButton.hidden = open;
+    resendButton.setAttribute('aria-expanded', String(open));
+    if (open) {
+      input.value = ticket.customerEmail;
+      input.removeAttribute('aria-invalid');
+      error.textContent = '';
+      confirmation.textContent = '';
+      input.focus();
+      input.select();
+    } else {
+      resendButton.focus();
+    }
+  }
+
+  resendButton.addEventListener('click', () => setOpen(true));
+  cancelButton.addEventListener('click', () => setOpen(false));
+  form.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.stopPropagation();
+      setOpen(false);
+    }
+  });
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const email = input.value.trim();
+    if (!EMAIL_PATTERN.test(email)) {
+      error.textContent = t('dashboardResendInvalidEmail');
+      input.setAttribute('aria-invalid', 'true');
+      input.focus();
+      return;
+    }
+    input.removeAttribute('aria-invalid');
+    error.textContent = '';
+    sendButton.disabled = true;
+    cancelButton.disabled = true;
+    input.readOnly = true;
+    sendButton.textContent = t('dashboardResendSending');
+    let result: { sent: boolean; email: string } | null = null;
+    try {
+      result = await resendTicketEmail(ticket.ticketId, email);
+    } catch {
+      result = null;
+    }
+    sendButton.disabled = false;
+    cancelButton.disabled = false;
+    input.readOnly = false;
+    sendButton.textContent = t('dashboardResendSendButton');
+
+    if (result) {
+      ticket.emailStatus = result.sent ? 'sent' : 'failed';
+      label.textContent = emailStatusText(ticket.emailStatus);
+    }
+    if (!result || !result.sent) {
+      error.textContent = t('dashboardResendFailure');
+      return;
+    }
+
+    const addressChanged = result.email !== ticket.customerEmail;
+    ticket.customerEmail = result.email;
+    customerEmailRow.textContent = t('dashboardDetailCustomerEmail', { value: result.email });
+    setOpen(false);
+    confirmation.textContent = t('dashboardResendSentTo', { email: result.email });
+    if (addressChanged) onChanged();
+  });
+
+  return section;
 }
 
 function renderDetailModal(container: HTMLElement, ticket: TicketRecord, onChanged: () => void) {
@@ -205,7 +328,8 @@ function renderDetailModal(container: HTMLElement, ticket: TicketRecord, onChang
 
   modal.appendChild(fieldRow(t('dashboardDetailTicketId', { value: ticket.ticketId })));
   modal.appendChild(fieldRow(t(ticket.status === 'validated' ? 'statusValidated' : 'statusIssued')));
-  modal.appendChild(fieldRow(t('dashboardDetailCustomerEmail', { value: ticket.customerEmail })));
+  const customerEmailRow = fieldRow(t('dashboardDetailCustomerEmail', { value: ticket.customerEmail }));
+  modal.appendChild(customerEmailRow);
   modal.appendChild(fieldRow(t('dashboardDetailCustomerPhone', { value: ticket.customerPhone ?? NONE })));
   modal.appendChild(fieldRow(t('dashboardDetailTransactionCode', { value: ticket.transactionCode })));
   modal.appendChild(fieldRow(t('scanItemsLabel', { items: formatItemList(ticket.items) })));
@@ -220,7 +344,7 @@ function renderDetailModal(container: HTMLElement, ticket: TicketRecord, onChang
   const noteRow = fieldRow(t('dashboardDetailValidationNote', { value: ticket.validationNote ?? NONE }));
   noteRow.className = 'modal-note';
   modal.appendChild(noteRow);
-  modal.appendChild(renderEmailStatusRow(ticket));
+  modal.appendChild(renderEmailSection(ticket, customerEmailRow, onChanged));
 
   const actions = document.createElement('div');
   actions.className = 'actions';

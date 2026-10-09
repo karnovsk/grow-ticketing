@@ -43,7 +43,12 @@ export type TranslationKey =
   | 'dashboardValidatedAt'
   | 'dashboardValidatedBy'
   | 'dashboardResendButton'
-  | 'dashboardResendSuccess'
+  | 'dashboardResendToLabel'
+  | 'dashboardResendSendButton'
+  | 'dashboardResendSending'
+  | 'dashboardResendCancel'
+  | 'dashboardResendInvalidEmail'
+  | 'dashboardResendSentTo'
   | 'dashboardResendFailure'
   | 'dashboardDetailClose'
   | 'dashboardDetailTicketId'
@@ -106,8 +111,13 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     dashboardValidatedAt: '(validated {{time}})',
     dashboardValidatedBy: '(validated {{time}} by {{staff}})',
     dashboardResendButton: 'Resend email',
-    dashboardResendSuccess: 'Email resent',
-    dashboardResendFailure: 'Resend failed — try again',
+    dashboardResendToLabel: 'Send the ticket to',
+    dashboardResendSendButton: 'Send email',
+    dashboardResendSending: 'Sending…',
+    dashboardResendCancel: 'Cancel',
+    dashboardResendInvalidEmail: 'Enter a full email address, like name@example.com',
+    dashboardResendSentTo: 'Sent to {{email}}',
+    dashboardResendFailure: "The email didn't go out. Check the address and try again.",
     dashboardDetailClose: 'Close',
     dashboardDetailTicketId: 'Ticket ID: {{value}}',
     dashboardDetailCustomerEmail: 'Email: {{value}}',
@@ -168,8 +178,13 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     dashboardValidatedAt: '(נמסר ב-{{time}})',
     dashboardValidatedBy: '(נמסר ב-{{time}} על ידי {{staff}})',
     dashboardResendButton: 'שליחה חוזרת של האימייל',
-    dashboardResendSuccess: 'האימייל נשלח מחדש',
-    dashboardResendFailure: 'השליחה נכשלה — נסו שוב',
+    dashboardResendToLabel: 'שליחת הכרטיס אל',
+    dashboardResendSendButton: 'שליחת אימייל',
+    dashboardResendSending: 'שולח…',
+    dashboardResendCancel: 'ביטול',
+    dashboardResendInvalidEmail: 'הזינו כתובת אימייל מלאה, למשל name@example.com',
+    dashboardResendSentTo: 'נשלח אל {{email}}',
+    dashboardResendFailure: 'האימייל לא נשלח. בדקו את הכתובת ונסו שוב.',
     dashboardDetailClose: 'סגירה',
     dashboardDetailTicketId: 'מזהה כרטיס: {{value}}',
     dashboardDetailCustomerEmail: 'אימייל: {{value}}',

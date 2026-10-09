@@ -31,9 +31,14 @@ export async function invalidateTicket(ticketId: string) {
   return result.data;
 }
 
-export async function resendTicketEmail(ticketId: string) {
-  const callable = httpsCallable(functions, 'resendTicketEmailCallable');
-  const result = await callable({ ticketId });
+// `email` overrides the recipient; on a successful send the server also
+// saves it as the ticket's customerEmail and echoes back the address now on file.
+export async function resendTicketEmail(ticketId: string, email?: string) {
+  const callable = httpsCallable<{ ticketId: string; email?: string }, { sent: boolean; email: string }>(
+    functions,
+    'resendTicketEmailCallable',
+  );
+  const result = await callable({ ticketId, email });
   return result.data;
 }
 
