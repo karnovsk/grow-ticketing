@@ -6,6 +6,17 @@ export type TranslationKey =
   | 'loginPasswordPlaceholder'
   | 'loginButton'
   | 'loginError'
+  | 'loginForgotPassword'
+  | 'resetTitle'
+  | 'resetIntro'
+  | 'resetSendButton'
+  | 'resetSending'
+  | 'resetSentTitle'
+  | 'resetSent'
+  | 'resetInvalidEmail'
+  | 'resetTooManyRequests'
+  | 'resetFailed'
+  | 'resetBackToLogin'
   | 'headerLoggedInAs'
   | 'headerLogoutButton'
   | 'navScan'
@@ -79,6 +90,17 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     loginPasswordPlaceholder: 'Password',
     loginButton: 'Log in',
     loginError: 'Login failed. Check your credentials.',
+    loginForgotPassword: 'Forgot your password?',
+    resetTitle: 'Reset your password',
+    resetIntro: "Enter the email you log in with. We'll send you a link to choose a new password.",
+    resetSendButton: 'Send reset link',
+    resetSending: 'Sending…',
+    resetSentTitle: 'Check your email',
+    resetSent: 'If {{email}} belongs to a staff account, a reset link is on its way. It can take a few minutes — check spam too.',
+    resetInvalidEmail: 'Enter a full email address, like name@example.com',
+    resetTooManyRequests: 'Too many attempts. Wait a few minutes, then try again.',
+    resetFailed: "The link couldn't be sent. Check your connection and try again.",
+    resetBackToLogin: 'Back to log in',
     headerLoggedInAs: 'Logged in as {{email}}',
     headerLogoutButton: 'Log out',
     navScan: 'Scan',
@@ -151,6 +173,17 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     loginPasswordPlaceholder: 'סיסמה',
     loginButton: 'התחברות',
     loginError: 'ההתחברות נכשלה. בדקו את פרטי ההתחברות.',
+    loginForgotPassword: 'שכחת את הסיסמה?',
+    resetTitle: 'איפוס סיסמה',
+    resetIntro: 'הזינו את האימייל שאיתו אתם מתחברים, ונשלח קישור לבחירת סיסמה חדשה.',
+    resetSendButton: 'שליחת קישור לאיפוס',
+    resetSending: 'שולח…',
+    resetSentTitle: 'בדקו את תיבת האימייל',
+    resetSent: 'אם {{email}} שייך לחשבון צוות, קישור לאיפוס בדרך. זה עשוי לקחת כמה דקות — בדקו גם בספאם.',
+    resetInvalidEmail: 'הזינו כתובת אימייל מלאה, למשל name@example.com',
+    resetTooManyRequests: 'יותר מדי ניסיונות. המתינו כמה דקות ונסו שוב.',
+    resetFailed: 'לא ניתן היה לשלוח את הקישור. בדקו את החיבור ונסו שוב.',
+    resetBackToLogin: 'חזרה להתחברות',
     headerLoggedInAs: 'מחובר/ת כ-{{email}}',
     headerLogoutButton: 'התנתקות',
     navScan: 'סריקה',

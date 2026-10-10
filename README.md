@@ -54,7 +54,9 @@ Alternative: these secrets live in Google Cloud Secret Manager under the hood, s
 
 ### 5. Create staff accounts
 
-Firebase console → **Authentication → Users → Add user** (email + password). Repeat per staff member — there is no public self-signup by design.
+Firebase console → **Authentication → Users → Add user** (email + password). Repeat per staff member — there is no public self-signup by design. Also untick **Authentication → Settings → User actions → Enable create (sign-up)**: otherwise anyone holding the app's public web config can create their own account from the browser, and any signed-in account can read tickets.
+
+Staff who forget their password use **Forgot your password?** on the login screen, which sends Firebase's password-reset email in the app's current language. Set it up under **Authentication → Templates → Password reset** (sender name, Hebrew/English wording), and keep the app's domain (e.g. `habaronit.com`) in **Authentication → Settings → Authorized domains** so the email's link returns to `/staff` — from any other host the email still works, just without that return link. With **email enumeration protection** on (same settings page), the screen shows the same "check your email" message whether or not the address has an account.
 
 ### 6. Configure and deploy the backend
 
