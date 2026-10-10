@@ -151,7 +151,7 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     loginPasswordPlaceholder: 'סיסמה',
     loginButton: 'התחברות',
     loginError: 'ההתחברות נכשלה. בדקו את פרטי ההתחברות.',
-    headerLoggedInAs: 'מחוברים כ-{{email}}',
+    headerLoggedInAs: 'מחובר/ת כ-{{email}}',
     headerLogoutButton: 'התנתקות',
     navScan: 'סריקה',
     navSearch: 'חיפוש לפי אסמכתא',
