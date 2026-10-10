@@ -54,7 +54,17 @@ Alternative: these secrets live in Google Cloud Secret Manager under the hood, s
 
 ### 5. Create staff accounts
 
-Firebase console → **Authentication → Users → Add user** (email + password). Repeat per staff member — there is no public self-signup by design. Also untick **Authentication → Settings → User actions → Enable create (sign-up)**: otherwise anyone holding the app's public web config can create their own account from the browser, and any signed-in account can read tickets.
+There is no public self-signup by design — an admin creates each account in the Firebase console, and the staff member then chooses their own password, so the admin never knows it:
+
+1. **Authentication → Users → Add user**: enter their email and a long random throwaway password (e.g. from a password manager's generator). Don't share it.
+2. Send them the reset email, either from the console (the user's row → ⋮ → **Reset password**, sent in the template's configured language) or by having them tap **Forgot your password?** on the staff app's login screen (sent in the app's current language).
+3. They follow the link, choose a password on Firebase's own password page, and log in at `/staff`. The user's **Signed in** date in the Users list confirms it worked.
+
+Tell new staff to expect the email first: it's worded as a password *reset*, so it's easy to mistake for spam or an error.
+
+To remove someone: the user's row → ⋮ → **Disable account**. They can't log in again, though a session already open on their device keeps working for up to an hour, until its sign-in token expires.
+
+Also untick **Authentication → Settings → User actions → Enable create (sign-up)**: otherwise anyone holding the app's public web config can create their own account from the browser, and any signed-in account can read tickets.
 
 Staff who forget their password use **Forgot your password?** on the login screen, which sends Firebase's password-reset email in the app's current language. Set it up under **Authentication → Templates → Password reset** (sender name, Hebrew/English wording), and keep the app's domain (e.g. `habaronit.com`) in **Authentication → Settings → Authorized domains** so the email's link returns to `/staff` — from any other host the email still works, just without that return link. With **email enumeration protection** on (same settings page), the screen shows the same "check your email" message whether or not the address has an account.
 
