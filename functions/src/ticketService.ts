@@ -9,6 +9,9 @@ const COLLECTION = 'tickets';
 // for the same purchase arriving concurrently can't both create a ticket
 // (a plain query-then-create, which was here before, could not guarantee that).
 const TRANSACTION_LOCKS_COLLECTION = 'transactionLocks';
+// Kept in sync with archiveService.ts's ARCHIVE_COLLECTION (not imported from
+// there: archiveService depends on this module's neighbours, not the reverse).
+const ARCHIVE_COLLECTION = 'ticketsArchive';
 
 export interface NewTicketInput {
   transactionCode: string;
@@ -51,7 +54,12 @@ export async function createTicketIfNew(input: NewTicketInput): Promise<CreateTi
     if (lockDoc.exists) {
       const existingTicketId = (lockDoc.data() as { ticketId: string }).ticketId;
       const existingTicketDoc = await tx.get(db.collection(COLLECTION).doc(existingTicketId));
-      return { ticket: existingTicketDoc.data() as Ticket, created: false };
+      if (existingTicketDoc.exists) return { ticket: existingTicketDoc.data() as Ticket, created: false };
+      // The lock outlives the ticket once it's archived, so a webhook replayed
+      // for an old purchase still resolves to that ticket instead of minting a
+      // second one.
+      const archivedTicketDoc = await tx.get(db.collection(ARCHIVE_COLLECTION).doc(existingTicketId));
+      return { ticket: archivedTicketDoc.data() as Ticket, created: false };
     }
     const ticket = buildNewTicket(ticketId, input);
     tx.set(db.collection(COLLECTION).doc(ticketId), ticket);

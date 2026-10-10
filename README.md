@@ -170,6 +170,23 @@ Open **Firebase console → Firestore Database**, and create (or edit) a documen
 
 Note: `primaryColor` is rendered as white text over the hero band, so avoid very light colors (no automatic contrast adjustment). `utcOffsetMinutes` is a fixed manual value, not DST-aware — if the deployment's local timezone observes daylight saving, it'll need updating twice a year to stay accurate.
 
+## Automatic archiving of old tickets
+
+The `archiveOldTicketsScheduled` function runs every night at 05:00 Israel time and moves old tickets from the `tickets` collection to `ticketsArchive`:
+
+- a ticket that was picked up more than 50 days ago;
+- a ticket that was never picked up and was sold more than 365 days ago.
+
+An archived ticket is gone as far as the staff app is concerned: its QR code scans as "not found", and it doesn't appear in search or the tickets list. `firestore.rules` grants no access to `ticketsArchive`, so the copy (the original ticket plus `archivedAt` and `archiveReason`) is only visible in the Firebase console. To restore one, copy its document back into `tickets` under the same ID.
+
+Settings live in the Firestore document `settings/archive` (optional — without it the defaults above apply) and take effect on the next run, no redeploy needed:
+
+- `enabled` (bool, default `true`) — set to `false` to pause archiving.
+- `dryRun` (bool, default `false`) — when `true`, a run moves nothing and only logs (Cloud Logging) which tickets it would have archived.
+- `pickedUpAfterDays` (number, default `50`), `unclaimedAfterDays` (number, default `365`) — must be positive; anything else falls back to the default.
+
+To run it on demand instead of waiting for 05:00, open Cloud Scheduler in the Google Cloud console and use "Force run" on the job.
+
 ## One-off Firestore reads/writes from a local script
 
 A standalone Node script using `firebase-admin` (e.g. `admin.initializeApp({projectId: ...})`) needs Application Default Credentials (ADC) to authenticate, separate from the Firebase CLI's own login. If `gcloud auth application-default login` hasn't been run on your machine, such a script fails with "Could not load the default credentials" even though `firebase deploy` and other CLI commands work fine (they use a different, CLI-internal OAuth flow).

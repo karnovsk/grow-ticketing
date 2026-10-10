@@ -87,3 +87,36 @@ export async function getEmailSettings(): Promise<EmailSettings> {
 
   return merged;
 }
+
+export interface ArchiveSettings {
+  enabled: boolean;
+  dryRun: boolean;
+  pickedUpAfterDays: number;
+  unclaimedAfterDays: number;
+}
+
+const DEFAULT_ARCHIVE_SETTINGS: ArchiveSettings = {
+  enabled: true,
+  dryRun: false,
+  pickedUpAfterDays: 50,
+  unclaimedAfterDays: 365,
+};
+
+// Read by the nightly archive run (see archiveService.ts). A day count has to
+// be a positive number to be accepted — a 0 or negative value in the document
+// would archive tickets the moment they're sold or picked up, so it falls
+// back to the default instead.
+export async function getArchiveSettings(): Promise<ArchiveSettings> {
+  const doc = await db.collection('settings').doc('archive').get();
+  if (!doc.exists) return DEFAULT_ARCHIVE_SETTINGS;
+
+  const data = doc.data() as Record<string, unknown>;
+  const merged: ArchiveSettings = { ...DEFAULT_ARCHIVE_SETTINGS };
+  if (typeof data.enabled === 'boolean') merged.enabled = data.enabled;
+  if (typeof data.dryRun === 'boolean') merged.dryRun = data.dryRun;
+  for (const key of ['pickedUpAfterDays', 'unclaimedAfterDays'] as const) {
+    const value = data[key];
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) merged[key] = value;
+  }
+  return merged;
+}

@@ -1,7 +1,9 @@
 import { onRequest, onCall } from 'firebase-functions/v2/https';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { handleGrowWebhook } from './webhookHandler';
 import { handleValidateTicket, handleInvalidateTicket, handleResendTicketEmail } from './callables';
 import { resolveRootRedirect } from './rootRedirect';
+import { archiveOldTickets } from './archiveService';
 import { growWebhookKeySecret, resendApiKeySecret } from './secrets';
 
 // Hosting rewrites "/" here (see firebase.json) instead of hardcoding a
@@ -45,3 +47,13 @@ export const resendTicketEmailCallable = onCall({ secrets: [resendApiKeySecret] 
     request.auth ? { uid: request.auth.uid, email: request.auth.token.email ?? null } : undefined,
   );
 });
+
+// Nightly, at an hour the venue is closed: moves old tickets out of `tickets`
+// into `ticketsArchive` (see archiveService.ts). Thresholds, an on/off switch
+// and a dry-run switch live in Firestore settings/archive.
+export const archiveOldTicketsScheduled = onSchedule(
+  { schedule: 'every day 05:00', timeZone: 'Asia/Jerusalem' },
+  async () => {
+    await archiveOldTickets();
+  },
+);

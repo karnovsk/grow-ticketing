@@ -42,6 +42,14 @@ describe('firestore.rules for tickets', () => {
     await assertSucceeds(authedDb.collection('tickets').doc('t1').get());
   });
 
+  test('archived tickets are not readable, even by staff', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await context.firestore().collection('ticketsArchive').doc('t1').set({ status: 'validated' });
+    });
+    const authedDb = testEnv.authenticatedContext('staff-1').firestore();
+    await assertFails(authedDb.collection('ticketsArchive').doc('t1').get());
+  });
+
   test('authenticated users cannot write tickets directly', async () => {
     const authedDb = testEnv.authenticatedContext('staff-1').firestore();
     await assertFails(authedDb.collection('tickets').doc('t2').set({ status: 'issued' }));
