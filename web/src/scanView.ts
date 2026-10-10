@@ -1,7 +1,8 @@
 // web/src/scanView.ts
 import { Html5Qrcode } from 'html5-qrcode';
 import { validateTicket, getTicketById, TicketRecord } from './ticketApi';
-import { formatItemList, formatTimestamp } from './format';
+import { formatTimestamp } from './format';
+import { renderItemLine, icon, IconName } from './itemTags';
 import { t } from './i18n';
 import { ScanState, resolveLookup, resolveConfirmOutcome } from './scanFlow';
 
@@ -35,22 +36,61 @@ export function renderScanView(container: HTMLElement): ScanViewHandle {
     return el;
   }
 
-  function renderCard(variant: string, text: string, buttons: HTMLButtonElement[]) {
+  type Outcome = 'ready' | 'success' | 'warning' | 'error';
+
+  const OUTCOME_ICONS: Record<Outcome, IconName | null> = {
+    ready: null,
+    success: 'check',
+    warning: 'alert',
+    error: 'cross',
+  };
+
+  // The outcome panel is the one loud element in the app: a full wash of the
+  // state's color, readable at arm's length across a dim counter. When there
+  // is a ticket, what was bought (and what was paid) is its headline — the
+  // buyer's name comes second.
+  function renderOutcome(
+    outcome: Outcome,
+    title: string | null,
+    ticket: TicketRecord | null,
+    detail: string | null,
+    buttons: HTMLButtonElement[],
+  ) {
     resultEl.innerHTML = '';
-    const card = document.createElement('div');
+    const panel = document.createElement('section');
     // card-validate-pop is a more emphasized entrance reserved for the
-    // "picked up" success card specifically, so confirming a ticket reads
-    // as a distinct beat rather than just another card appearing.
-    const entranceClass = variant === 'card-success' ? 'card-validate-pop' : 'card-enter';
-    card.className = `card ${variant} ${entranceClass}`;
-    const heading = document.createElement('p');
-    heading.textContent = text;
-    card.appendChild(heading);
+    // "picked up" panel specifically, so confirming a ticket reads as a
+    // distinct beat rather than just another panel appearing.
+    const entranceClass = outcome === 'success' ? 'card-validate-pop' : 'card-enter';
+    panel.className = `outcome outcome-${outcome} ${entranceClass}`;
+    panel.setAttribute('role', outcome === 'error' ? 'alert' : 'status');
+
+    if (title) {
+      const heading = document.createElement('h2');
+      heading.className = 'outcome-title';
+      const iconName = OUTCOME_ICONS[outcome];
+      if (iconName) heading.appendChild(icon(iconName, 'icon outcome-icon'));
+      heading.append(title);
+      panel.appendChild(heading);
+    }
+    if (ticket) {
+      panel.appendChild(renderItemLine(ticket, 'lg'));
+      const name = document.createElement('p');
+      name.className = 'outcome-name';
+      name.textContent = ticket.customerName;
+      panel.appendChild(name);
+    }
+    if (detail) {
+      const detailEl = document.createElement('p');
+      detailEl.className = 'outcome-detail';
+      detailEl.textContent = detail;
+      panel.appendChild(detailEl);
+    }
     const actions = document.createElement('div');
     actions.className = 'actions';
     buttons.forEach((b) => actions.appendChild(b));
-    card.appendChild(actions);
-    resultEl.appendChild(card);
+    panel.appendChild(actions);
+    resultEl.appendChild(panel);
   }
 
   function scheduleAutoResume() {
@@ -68,10 +108,6 @@ export function renderScanView(container: HTMLElement): ScanViewHandle {
     scanner.resume();
   }
 
-  function itemsLine(ticket: TicketRecord): string {
-    return t('scanItemsLabel', { items: formatItemList(ticket.items) });
-  }
-
   function render() {
     readerEl.style.display = state.phase === 'scanning' ? '' : 'none';
     instructionEl.textContent = state.phase === 'scanning' ? t('scanInstruction') : '';
@@ -79,43 +115,45 @@ export function renderScanView(container: HTMLElement): ScanViewHandle {
     if (state.phase === 'scanning') {
       resultEl.innerHTML = '';
     } else if (state.phase === 'cameraError') {
-      renderCard('card-error', t('scanCameraError'), []);
+      renderOutcome('error', t('scanCameraError'), null, null, []);
     } else if (state.phase === 'lookupError') {
-      renderCard('card-error', t('scanLookupError'), [
-        button(t('scanRetryButton'), () => lastScannedId && lookUp(lastScannedId)),
+      renderOutcome('error', t('scanLookupError'), null, null, [
+        button(t('scanRetryButton'), () => lastScannedId && lookUp(lastScannedId), 'btn-primary btn-block'),
       ]);
     } else if (state.phase === 'previewNotFound') {
-      renderCard('card-error', t('scanNotFoundTitle'), [
-        button(t('scanAgainButton'), resumeScanning),
+      renderOutcome('error', t('scanNotFoundTitle'), null, null, [
+        button(t('scanAgainButton'), resumeScanning, 'btn-primary btn-block'),
         button(t('scanNotFoundSearchLink'), () => {
           window.location.hash = 'search';
-        }),
+        }, 'btn-secondary btn-block'),
       ]);
     } else if (state.phase === 'preview') {
       const ticket = state.ticket;
-      renderCard('card-neutral', `${ticket.customerName} — ${itemsLine(ticket)}`, [
-        button(t('scanConfirmButton'), () => confirm(ticket), 'btn-primary'),
-        button(t('scanAgainButton'), resumeScanning),
+      renderOutcome('ready', null, ticket, null, [
+        button(t('scanConfirmButton'), () => confirm(ticket), 'btn-primary btn-block btn-large'),
+        button(t('scanAgainButton'), resumeScanning, 'btn-secondary btn-block'),
       ]);
     } else if (state.phase === 'previewAlreadyValidated') {
       const detail = t('scanAlreadyPickedUpDetail', {
         time: state.ticket.validatedAt ? formatTimestamp(state.ticket.validatedAt.seconds) : '',
         staff: state.ticket.validatedByEmail ?? '',
       });
-      renderCard('card-warning', `${t('scanAlreadyPickedUpTitle')} — ${detail}`, [
-        button(t('scanAgainButton'), resumeScanning),
+      renderOutcome('warning', t('scanAlreadyPickedUpTitle'), state.ticket, detail, [
+        button(t('scanAgainButton'), resumeScanning, 'btn-secondary btn-block'),
       ]);
     } else if (state.phase === 'confirming') {
-      renderCard('card-neutral', `${state.ticket.customerName} — ${itemsLine(state.ticket)}`, [
-        button(t('scanConfirmingButton'), () => {}, 'btn-primary', true),
+      renderOutcome('ready', null, state.ticket, null, [
+        button(t('scanConfirmingButton'), () => {}, 'btn-primary btn-block btn-large', true),
       ]);
     } else if (state.phase === 'result') {
-      renderCard('card-success', `${t('scanPickedUpTitle')} — ${itemsLine(state.ticket)}`, [
-        button(t('scanNextButton'), resumeScanning),
+      renderOutcome('success', t('scanPickedUpTitle'), state.ticket, null, [
+        button(t('scanNextButton'), resumeScanning, 'btn-secondary btn-block'),
       ]);
       scheduleAutoResume();
     } else if (state.phase === 'resultAlreadyValidated') {
-      renderCard('card-warning', t('scanAlreadyPickedUpTitle'), [button(t('scanNextButton'), resumeScanning)]);
+      renderOutcome('warning', t('scanAlreadyPickedUpTitle'), state.ticket, null, [
+        button(t('scanNextButton'), resumeScanning, 'btn-secondary btn-block'),
+      ]);
       scheduleAutoResume();
     }
   }

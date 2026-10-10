@@ -1,59 +1,215 @@
 /* web/src/style.css */
+
+/* ---------------------------------------------------------------------------
+   Tokens
+
+   Two themes (default, and [data-theme='habaronit'] via VITE_THEME), each
+   with a light and a dark variant. Dark follows the phone's setting — staff
+   mostly work evenings in a dim bar, where a white screen is glare.
+
+   The rule that matters most: the brand color (--primary) is only ever used
+   for primary buttons and chrome, never for a ticket state. States use
+   --ok / --warn / --err, plus a neutral outline for "waiting", so "picked up"
+   can't be confused with "issued" in a green-branded theme.
+   ------------------------------------------------------------------------ */
 :root {
-  --color-bg: #f5f5f4;
-  --color-surface: #ffffff;
-  --color-text: #1c1917;
-  --color-muted: #78716c;
-  --color-primary: #2563eb;
-  --color-success: #16a34a;
-  --color-warning: #d97706;
-  --color-error: #dc2626;
-  --radius: 12px;
-  --spacing: 1rem;
-  /* Chrome (header/nav) and accent tokens are split out from the base
-     palette so an alternate brand theme (see [data-theme="habaronit"]
-     below) can restyle the app shell and a sparing highlight color without
-     touching --color-surface/--color-text — content cards and inputs stay
-     legible regardless of which theme is active. Defaults here match the
-     plain look exactly, so this split is a no-op until a theme is set. */
-  --color-chrome-bg: var(--color-surface);
-  --color-chrome-text: var(--color-text);
-  --color-nav-hover-bg: var(--color-bg);
-  --color-accent: var(--color-primary);
-  --color-on-primary: #ffffff;
-  font-family: system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  --bg: #f4f4f3;
+  --surface: #ffffff;
+  --surface-sunk: #ececea;
+  --ink: #1c1c1a;
+  --muted: #5d5d58;
+  --line: #dcdcd8;
+  /* Input/control borders need 3:1 against the surface (WCAG 1.4.11). */
+  --line-strong: #84847e;
+  --chrome-bg: #ffffff;
+  --chrome-ink: #1c1c1a;
+  --chrome-muted: #5d5d58;
+  --chrome-hover: #ececea;
+  --chrome-line: #dcdcd8;
+  --primary: #2a56c6;
+  --on-primary: #ffffff;
+  --accent: #2a56c6;
+  --focus: #2a56c6;
+  --focus-chrome: #2a56c6;
+
+  --ok: #1d7a44;
+  --on-ok: #ffffff;
+  --ok-wash: #e2f2e7;
+  --ok-edge: #2f9b5b;
+  --warn-ink: #8a5300;
+  --warn-wash: #fcefd6;
+  --warn-edge: #d98e04;
+  --err: #b8261f;
+  --err-wash: #fbe4e1;
+  --err-edge: #d9443a;
+  --ready-wash: var(--surface);
+  --ready-edge: var(--accent);
+
+  /* Item tints: one background/ink pair per slot (see itemTint in format.ts). */
+  --tint-0-bg: #f6e9c8;
+  --tint-0-ink: #5f4500;
+  --tint-1-bg: #f5dde2;
+  --tint-1-ink: #78233a;
+  --tint-2-bg: #d9e8f4;
+  --tint-2-ink: #1b4a6d;
+  --tint-3-bg: #e8def3;
+  --tint-3-ink: #4b2c74;
+  --tint-4-bg: #dfedd2;
+  --tint-4-ink: #36541a;
+  --tint-5-bg: #f3dfd1;
+  --tint-5-ink: #763a14;
+
+  --radius-panel: 16px;
+  --radius-control: 10px;
+  --radius-tag: 6px;
+
+  --fs-sm: 0.875rem;
+  --fs-base: 1rem;
+  --fs-lg: 1.25rem;
+  --fs-xl: 1.75rem;
+
+  color-scheme: light;
+  font-family: 'Rubik', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  font-size: 100%;
+  line-height: 1.5;
 }
 
-/* Brand theme sampled from habaronit.my.canva.site/menu (forest green +
-   gold), muted down from the site's own saturated colors — this is chrome
-   for a functional staff app, not the marketing site itself. Off by
-   default — set VITE_THEME=habaronit in web/.env to enable (see main.ts).
-   Semantic status colors (success/warning/error) are deliberately left
-   untouched so validated/failed states keep their universal meaning across
-   both themes. --color-bg intentionally stays a light near-white tint, not
-   the bold brand green — components like .qty-badge assume it's a light
-   background to sit text on, and confining the saturated color to the
-   header/nav chrome (the one place worth spending it) keeps the rest of
-   the app calm instead of flooding every surface with it. */
+/* Habaronit: forest green + gold, sampled from habaronit.my.canva.site/menu
+   and muted down — chrome for a working tool, not the marketing site. The
+   saturated green is spent on the header/nav only; ink and borders take a
+   faint green cast so the whole app reads as one family. */
 :root[data-theme='habaronit'] {
-  --color-bg: #f2f5f1;
-  --color-chrome-bg: #3a5943;
-  --color-chrome-text: #f5f1e0;
-  --color-nav-hover-bg: #2e4736;
-  --color-primary: #4a7057;
-  --color-on-primary: #ffffff;
-  --color-accent: #c9a83f;
+  --bg: #f3f5f0;
+  --surface: #ffffff;
+  --surface-sunk: #e8ede6;
+  --ink: #1d2a22;
+  --muted: #536258;
+  --line: #d3dcd3;
+  --line-strong: #7b8d80;
+  --chrome-bg: #3a5943;
+  --chrome-ink: #f5f1e0;
+  --chrome-muted: #d3d8c6;
+  --chrome-hover: #2e4736;
+  --chrome-line: #2e4736;
+  --primary: #4a7057;
+  --on-primary: #ffffff;
+  --accent: #c9a83f;
+  /* Dark gold for rings on light surfaces (≈4:1 on white); bright gold where
+     the ring sits on the green chrome. */
+  --focus: #8f7110;
+  --focus-chrome: #e0c25e;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121211;
+    --surface: #1c1c1b;
+    --surface-sunk: #262624;
+    --ink: #ecece8;
+    --muted: #a8a8a1;
+    --line: #33332f;
+    --line-strong: #77776f;
+    --chrome-bg: #1c1c1b;
+    --chrome-ink: #ecece8;
+    --chrome-muted: #a8a8a1;
+    --chrome-hover: #2a2a27;
+    --chrome-line: #33332f;
+    --primary: #6f93ef;
+    --on-primary: #0d1530;
+    --accent: #6f93ef;
+    --focus: #8eabf3;
+    --focus-chrome: #8eabf3;
+
+    --ok: #4cc27f;
+    --on-ok: #08210f;
+    --ok-wash: #15301f;
+    --ok-edge: #3fae6e;
+    --warn-ink: #f2c36b;
+    --warn-wash: #36290e;
+    --warn-edge: #d99a24;
+    --err: #f2867c;
+    --err-wash: #3a1815;
+    --err-edge: #e0594e;
+
+    --tint-0-bg: #3a3015;
+    --tint-0-ink: #efd690;
+    --tint-1-bg: #42222a;
+    --tint-1-ink: #f2b6c3;
+    --tint-2-bg: #1b3245;
+    --tint-2-ink: #abd0ee;
+    --tint-3-bg: #312548;
+    --tint-3-ink: #cfb9ef;
+    --tint-4-bg: #28381d;
+    --tint-4-ink: #bedb9e;
+    --tint-5-bg: #422a1c;
+    --tint-5-ink: #f0c19f;
+
+    color-scheme: dark;
+  }
+
+  :root[data-theme='habaronit'] {
+    --bg: #0f1712;
+    --surface: #18231c;
+    --surface-sunk: #213027;
+    --ink: #e6ece4;
+    --muted: #9db0a3;
+    --line: #2c3a31;
+    --line-strong: #6c8274;
+    --chrome-bg: #16211a;
+    --chrome-ink: #efe9d2;
+    --chrome-muted: #b5bfae;
+    --chrome-hover: #223127;
+    --chrome-line: #223127;
+    --primary: #7aa386;
+    --on-primary: #0d1a11;
+    --accent: #d4b65a;
+    --focus: #d4b65a;
+    --focus-chrome: #d4b65a;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Base
+   ------------------------------------------------------------------------ */
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  background: var(--color-bg);
-  color: var(--color-text);
+  background: var(--bg);
+  color: var(--ink);
   min-height: 100vh;
+}
+
+h1,
+h2 {
+  line-height: 1.2;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.icon {
+  width: 1.25em;
+  height: 1.25em;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.icon-sm {
+  width: 1em;
+  height: 1em;
 }
 
 #app {
@@ -62,56 +218,108 @@ body {
   min-height: 100vh;
 }
 
+/* ---------------------------------------------------------------------------
+   Chrome: header + nav
+   ------------------------------------------------------------------------ */
 header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--spacing);
+  gap: 1rem;
   padding: 0.75rem 1rem;
-  background: var(--color-chrome-bg);
-  color: var(--color-chrome-text);
-  border-block-end: 1px solid #e7e5e4;
+  background: var(--chrome-bg);
+  color: var(--chrome-ink);
+}
+
+header :focus-visible,
+nav :focus-visible {
+  outline-color: var(--focus-chrome);
+}
+
+.header-identity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.brand {
+  font-weight: 700;
+  font-size: var(--fs-base);
+}
+
+.header-user {
+  font-size: var(--fs-sm);
+  color: var(--chrome-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .header-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.25rem;
   align-items: center;
+  flex-shrink: 0;
 }
 
-.lang-toggle {
+.lang-toggle,
+.btn-ghost {
   /* Explicit color, not inherited — buttons don't reliably inherit text
      color from ancestors (some browsers default it to a UA system color),
      so without this it could render invisible against a themed header. */
-  color: var(--color-chrome-text);
-  border: 1px solid #d6d3d1;
+  color: var(--chrome-ink);
   background: transparent;
-  border-radius: 999px;
-  padding: 0.25rem 0.75rem;
-  font-size: 0.85rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 0.75rem;
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 500;
   cursor: pointer;
-  min-height: 32px;
+}
+
+.lang-toggle {
+  border-color: var(--chrome-muted);
+  border-radius: 999px;
+}
+
+.lang-toggle:hover,
+.btn-ghost:hover {
+  background: var(--chrome-hover);
 }
 
 nav {
   display: flex;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: var(--color-chrome-bg);
-  border-block-end: 1px solid #e7e5e4;
+  gap: 0.25rem;
+  padding: 0 0.5rem;
+  background: var(--chrome-bg);
+  border-block-end: 1px solid var(--chrome-line);
+  overflow-x: auto;
 }
 
 nav a {
-  padding: 0.5rem 0.75rem;
-  border-radius: var(--radius);
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 0.75rem;
+  border-block-end: 3px solid transparent;
   text-decoration: none;
-  color: var(--color-chrome-text);
-  font-weight: 600;
+  color: var(--chrome-muted);
+  font-weight: 500;
+  white-space: nowrap;
 }
 
-nav a:hover,
-nav a:focus-visible {
-  background: var(--color-nav-hover-bg);
+nav a:hover {
+  color: var(--chrome-ink);
+  background: var(--chrome-hover);
+}
+
+nav a[aria-current='page'] {
+  color: var(--chrome-ink);
+  border-block-end-color: var(--accent);
+  font-weight: 700;
 }
 
 main {
@@ -122,17 +330,22 @@ main {
   margin-inline: auto;
 }
 
+/* ---------------------------------------------------------------------------
+   Controls
+   ------------------------------------------------------------------------ */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.5rem;
   min-height: 44px;
-  padding: 0.6rem 1.25rem;
-  border-radius: var(--radius);
-  border: none;
-  font-size: 1rem;
-  font-weight: 600;
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--radius-control);
+  border: 1px solid transparent;
+  font: inherit;
+  font-weight: 500;
   cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
 }
 
 .btn:disabled {
@@ -141,24 +354,38 @@ main {
 }
 
 .btn-primary {
-  background: var(--color-primary);
-  color: var(--color-on-primary);
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--primary) 85%, var(--ink));
 }
 
 .btn-secondary {
-  background: var(--color-surface);
-  color: var(--color-text);
-  border: 1px solid #d6d3d1;
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--line-strong);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--surface-sunk);
 }
 
 .btn-block {
   width: 100%;
 }
 
+.btn-large {
+  min-height: 56px;
+  font-size: var(--fs-lg);
+  font-weight: 700;
+}
+
+/* Compact in look, not in hit area: still 44px tall for a thumb. */
 .btn-small {
-  min-height: 32px;
-  padding: 0.3rem 0.7rem;
-  font-size: 0.8rem;
+  padding-inline: 0.85rem;
+  font-size: var(--fs-sm);
 }
 
 input,
@@ -166,57 +393,387 @@ select {
   width: 100%;
   min-height: 44px;
   padding: 0.5rem 0.75rem;
-  border-radius: var(--radius);
-  border: 1px solid #d6d3d1;
-  font-size: 1rem;
-  background: var(--color-surface);
-  color: var(--color-text);
+  border-radius: var(--radius-control);
+  border: 1px solid var(--line-strong);
+  font: inherit;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+input::placeholder {
+  color: var(--muted);
+}
+
+label {
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--muted);
 }
 
 .field-error {
-  color: var(--color-error);
-  font-size: 0.9rem;
+  color: var(--err);
+  font-size: var(--fs-sm);
 }
 
+.field-error:empty {
+  display: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Surfaces
+   ------------------------------------------------------------------------ */
 .card {
-  background: var(--color-surface);
-  border-radius: var(--radius);
+  background: var(--surface);
+  border-radius: var(--radius-panel);
   padding: 1.25rem;
   margin-block-start: 1rem;
-  border-inline-start: 6px solid var(--color-muted);
-}
-
-.card-neutral {
-  border-inline-start-color: var(--color-accent);
-}
-
-.card-success {
-  border-inline-start-color: var(--color-success);
-}
-
-.card-warning {
-  border-inline-start-color: var(--color-warning);
-}
-
-.card-error {
-  border-inline-start-color: var(--color-error);
+  border: 1px solid var(--line);
 }
 
 .card p {
   margin-block: 0;
 }
 
-.card .actions {
+.actions {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   margin-block-start: 1rem;
 }
 
+/* Login */
+main.login {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-block-start: 12vh;
+}
+
+.login-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+  max-width: 360px;
+  margin: 0;
+}
+
+.login-card h1 {
+  font-size: var(--fs-xl);
+  margin-block: 0 0.75rem;
+}
+
+.login-card input {
+  margin-block-end: 0.5rem;
+}
+
+.login-card .btn {
+  margin-block-start: 0.5rem;
+}
+
+/* ---------------------------------------------------------------------------
+   What was bought: item tags + amount (itemTags.ts)
+   ------------------------------------------------------------------------ */
+.item-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  min-width: 0;
+}
+
+.item-tag {
+  max-width: 100%;
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--radius-tag);
+  background: var(--tint-0-bg);
+  color: var(--tint-0-ink);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-tag[data-tint='1'] { background: var(--tint-1-bg); color: var(--tint-1-ink); }
+.item-tag[data-tint='2'] { background: var(--tint-2-bg); color: var(--tint-2-ink); }
+.item-tag[data-tint='3'] { background: var(--tint-3-bg); color: var(--tint-3-ink); }
+.item-tag[data-tint='4'] { background: var(--tint-4-bg); color: var(--tint-4-ink); }
+.item-tag[data-tint='5'] { background: var(--tint-5-bg); color: var(--tint-5-ink); }
+
+.amount {
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.item-line-lg {
+  gap: 0.5rem 0.75rem;
+}
+
+.item-line-lg .item-tag {
+  padding: 0.25rem 0.75rem;
+  border-radius: 8px;
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  white-space: normal;
+}
+
+.item-line-lg .amount {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* ---------------------------------------------------------------------------
+   Status
+   ------------------------------------------------------------------------ */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.pill-issued {
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+}
+
+.pill-validated {
+  background: var(--ok);
+  color: var(--on-ok);
+  border: 1px solid var(--ok);
+}
+
+.status-mark {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong);
+}
+
+.status-mark .icon {
+  width: 14px;
+  height: 14px;
+  stroke-width: 3;
+}
+
+.status-mark-validated {
+  background: var(--ok);
+  border-color: var(--ok);
+  color: var(--on-ok);
+}
+
+.status-mark-email-failed {
+  border-color: var(--err);
+  color: var(--err);
+}
+
+/* ---------------------------------------------------------------------------
+   Scan
+   ------------------------------------------------------------------------ */
+#qr-reader {
+  width: min(100%, 400px);
+  aspect-ratio: 1 / 1;
+  margin-inline: auto;
+  overflow: hidden;
+  border-radius: var(--radius-panel);
+  background: var(--surface-sunk);
+}
+
+.scan-instruction {
+  text-align: center;
+  color: var(--muted);
+  margin-block-start: 0.75rem;
+}
+
+/* The one loud element in the app. A full wash of the outcome's color,
+   readable at arm's length; when there's a ticket, its items and amount are
+   the headline and the buyer's name comes second. */
+.outcome {
+  margin-block-start: 1rem;
+  padding: 1.25rem;
+  border-radius: var(--radius-panel);
+  border: 2px solid var(--ready-edge);
+  background: var(--ready-wash);
+}
+
+.outcome-success {
+  background: var(--ok-wash);
+  border-color: var(--ok-edge);
+}
+
+.outcome-warning {
+  background: var(--warn-wash);
+  border-color: var(--warn-edge);
+}
+
+.outcome-error {
+  background: var(--err-wash);
+  border-color: var(--err-edge);
+}
+
+.outcome-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+  font-size: var(--fs-xl);
+  font-weight: 700;
+}
+
+.outcome-success .outcome-title {
+  color: var(--ok);
+}
+
+.outcome-warning .outcome-title {
+  color: var(--warn-ink);
+}
+
+.outcome-error .outcome-title {
+  color: var(--err);
+}
+
+.outcome-icon {
+  width: 1.1em;
+  height: 1.1em;
+  stroke-width: 3;
+}
+
+.outcome-name {
+  margin: 0.6rem 0 0;
+  font-size: var(--fs-lg);
+}
+
+.outcome-detail {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+}
+
+/* ---------------------------------------------------------------------------
+   Lists: Tickets + Search
+   ------------------------------------------------------------------------ */
+.search-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-block-end: 1rem;
+}
+
+.ticket-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ticket-list li {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  padding: 0.75rem 1rem;
+}
+
+/* Dashboard rows: status | name over items | date. */
+#ticket-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+#ticket-list li:hover {
+  border-color: var(--line-strong);
+  background: color-mix(in srgb, var(--surface) 92%, var(--ink));
+}
+
+.ticket-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.ticket-summary {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ticket-validated {
+  font-weight: 400;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.ticket-date {
+  flex-shrink: 0;
+  align-self: flex-start;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.empty-state {
+  margin-block-start: 1.5rem;
+  text-align: center;
+  color: var(--muted);
+}
+
+/* Search results */
+.result-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.result-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.result-name {
+  font-weight: 500;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.result-feedback {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.result-feedback:empty {
+  display: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Ticket detail modal
+   ------------------------------------------------------------------------ */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -236,19 +793,69 @@ select {
 
 .modal-close {
   align-self: flex-end;
+  margin-block-end: 0.25rem;
+}
+
+.modal-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
   margin-block-end: 0.75rem;
 }
 
-.modal h2 {
-  margin-block: 0 0.75rem;
+.modal-heading h2 {
+  margin: 0;
+  font-size: var(--fs-lg);
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
-.modal p {
-  margin-block: 0 0.5rem;
+.detail-list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.4rem 1rem;
+  margin: 1rem 0;
+  padding-block-start: 1rem;
+  border-block-start: 1px solid var(--line);
+}
+
+.detail-list dt {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  padding-block-start: 0.1rem;
+}
+
+.detail-list dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Emails, phones and codes stay left-to-right inside Hebrew, but line up
+   with the Hebrew values' start edge. */
+.ltr-value {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: end;
+}
+
+:root[dir='ltr'] .ltr-value {
+  text-align: start;
+}
+
+.ticket-id {
+  font-size: var(--fs-sm);
+  color: var(--muted);
 }
 
 .modal-note {
   white-space: pre-wrap;
+}
+
+.modal-email {
+  padding-block-start: 1rem;
+  border-block-start: 1px solid var(--line);
 }
 
 .modal-email-status {
@@ -256,42 +863,44 @@ select {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+  margin: 0;
 }
 
-.modal-email {
-  margin-block-end: 0.5rem;
+.modal-email-label {
+  font-size: var(--fs-sm);
+  color: var(--muted);
 }
 
-.modal-email .modal-email-status {
-  margin-block-end: 0;
+.email-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: var(--fs-base);
+  font-weight: 500;
 }
 
-/* .btn sets display, which would otherwise beat the hidden attribute. */
-.btn[hidden],
-.resend-form[hidden] {
-  display: none;
+.email-status-sent {
+  color: var(--ok);
+}
+
+.email-status-failed {
+  color: var(--err);
 }
 
 /* The composer opens in place of the button, indented off the status line by
-   an inline-start rule in the accent color (the same edge treatment the
-   error cards use) so it reads as a step belonging to that line, not a new
-   section of the modal. */
+   an inline-start rule in the accent color so it reads as a step belonging
+   to that line, not a new section of the modal. */
 .resend-form {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
   margin-block-start: 0.6rem;
   padding: 0.75rem 0.85rem;
-  border-inline-start: 3px solid var(--color-accent);
-  border-radius: var(--radius);
+  border-inline-start: 3px solid var(--accent);
+  border-radius: var(--radius-control);
   border-start-start-radius: 0;
   border-end-start-radius: 0;
-  background: var(--color-bg);
-}
-
-.resend-form label {
-  font-size: 0.9rem;
-  color: var(--color-muted);
+  background: var(--surface-sunk);
 }
 
 .resend-form input {
@@ -300,11 +909,7 @@ select {
 }
 
 .resend-form input[aria-invalid='true'] {
-  border-color: var(--color-error);
-}
-
-.resend-form .field-error:empty {
-  display: none;
+  border-color: var(--err);
 }
 
 .resend-form .field-error {
@@ -322,149 +927,29 @@ select {
 }
 
 .resend-confirmation {
-  color: var(--color-success);
-  font-size: 0.9rem;
-  font-weight: 600;
+  margin: 0.5rem 0 0;
+  color: var(--ok);
+  font-size: var(--fs-sm);
+  font-weight: 500;
   overflow-wrap: anywhere;
 }
 
-.modal .resend-confirmation:empty {
+.resend-confirmation:empty {
   display: none;
 }
 
-.pill {
-  display: inline-block;
-  padding: 0.2rem 0.6rem;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #fff;
-}
-
-.pill-issued {
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-}
-
-.pill-validated {
-  background: var(--color-success);
-}
-
-#qr-reader {
-  width: min(90vw, 400px);
-  aspect-ratio: 1 / 1;
-  margin-inline: auto;
-  overflow: hidden;
-  border-radius: var(--radius);
-}
-
-.scan-instruction {
-  text-align: center;
-  color: var(--color-muted);
-  margin-block-start: 0.75rem;
-}
-
-.ticket-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.ticket-list li {
-  background: var(--color-surface);
-  border-radius: var(--radius);
-  padding: 0.75rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-/* Dashboard rows only (#ticket-list, distinct from search results' #search-results,
-   which needs its multi-line layout for the note input + validate button) — one
-   compact line per ticket so a screenful of pickups is scannable at a glance. */
-#ticket-list li {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.75rem;
-  cursor: pointer;
-  transition: box-shadow 150ms ease;
-}
-
-#ticket-list li:hover,
-#ticket-list li:focus-visible {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.ticket-summary {
-  /* Grows to fill all leftover row width itself, so the badges/date after it
-     always sit at the same edge regardless of how long the customer name is
-     — without this they'd shift left/right per row as summary shrunk to fit
-     its own content instead of claiming the remaining space. */
-  flex: 1 1 auto;
-  font-size: 0.85rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-}
-
-.status-dot {
-  flex-shrink: 0;
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  border: 2px solid var(--color-primary);
-}
-
-.status-dot.filled {
-  background: var(--color-success);
-  border-color: var(--color-success);
-}
-
-.status-dot.email-failed {
-  border-color: var(--color-error);
-}
-
-.qty-badge {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.5rem;
-  padding: 0.1rem 0.4rem;
-  border-radius: 6px;
-  border: 1px solid #d6d3d1;
-  background: var(--color-bg);
-  /* Explicit, not inherited: --color-bg is only ever a light neutral tint
-     (even in the habaronit theme — see the note above the theme block), so
-     the badge's text must stay a fixed dark color rather than picking up
-     whatever --color-text/--color-chrome-text happens to resolve to in an
-     ancestor, which could put light text on this light background. */
-  color: var(--color-text);
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.ticket-date {
-  flex-shrink: 0;
-  font-size: 0.8rem;
-  color: var(--color-muted);
-}
-
-.search-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-block-end: 1rem;
+.modal .actions {
+  padding-block-start: 1rem;
+  border-block-start: 1px solid var(--line);
 }
 
 @media (min-width: 720px) {
   main {
     max-width: 720px;
+  }
+
+  main.login {
+    max-width: none;
   }
 
   .search-controls {
@@ -476,15 +961,20 @@ select {
     width: auto;
     flex: 1;
   }
+
+  .search-controls input {
+    flex: 2;
+  }
 }
 
-/* Entrance (and, for the modal, exit) motion — gated entirely behind
-   prefers-reduced-motion so that with it set, these classes carry no
-   animation at all (elements just render/disappear in their normal state
-   immediately) rather than needing a JS feature check at every call site.
-   The modal's *close* still needs a JS-side check (see closeModal() in
-   dashboardView.ts) since something has to decide when it's safe to
-   actually remove the element from the DOM. */
+/* ---------------------------------------------------------------------------
+   Motion — gated entirely behind prefers-reduced-motion so that with it set,
+   these classes carry no animation at all (elements just render/disappear in
+   their normal state immediately) rather than needing a JS feature check at
+   every call site. The modal's *close* still needs a JS-side check (see
+   closeModal() in dashboardView.ts) since something has to decide when it's
+   safe to actually remove the element from the DOM.
+   ------------------------------------------------------------------------ */
 @media (prefers-reduced-motion: no-preference) {
   .resend-form:not([hidden]) {
     animation: resend-open 220ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -520,6 +1010,12 @@ select {
 
   .modal-backdrop-closing .modal {
     animation: modal-pop-out 220ms ease-in both;
+  }
+
+  /* A quick, clear pulse marking the moment a pill's status actually flips
+     (search view: validating a ticket swaps this pill in place). */
+  .pill-pop {
+    animation: pill-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 }
 
@@ -557,8 +1053,8 @@ select {
 }
 
 /* A more emphasized moment than the plain card-enter — reserved for the
-   scan view's "picked up" success card, so confirming a ticket reads as a
-   distinct, satisfying beat rather than just another card appearing. */
+   scan view's "picked up" panel, so confirming a ticket reads as a
+   distinct, satisfying beat rather than just another panel appearing. */
 @keyframes card-validate-pop {
   0% {
     opacity: 0;
@@ -611,14 +1107,6 @@ select {
   to {
     opacity: 0;
     transform: scale(0.96) translateY(8px);
-  }
-}
-
-/* A quick, clear pulse marking the moment a pill's status actually flips
-   (search view: validating a ticket mutates this exact pill in place). */
-@media (prefers-reduced-motion: no-preference) {
-  .pill-pop {
-    animation: pill-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 }
 

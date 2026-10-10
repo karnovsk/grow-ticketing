@@ -1,16 +1,16 @@
 import { searchTicketsByField, getTicketById, validateTicket, TicketRecord } from './ticketApi';
-import { formatItemList } from './format';
+import { renderItemLine, statusPill } from './itemTags';
 import { t } from './i18n';
 
 export function renderSearchView(container: HTMLElement) {
   container.innerHTML = `
     <div class="search-controls">
-      <select id="search-field">
+      <select id="search-field" aria-label="${t('searchFieldTicketId')} / ${t('searchFieldTransaction')}">
         <option value="ticketId">${t('searchFieldTicketId')}</option>
         <option value="transactionCode">${t('searchFieldTransaction')}</option>
       </select>
-      <input id="search-value" placeholder="${t('searchValuePlaceholder')}" />
-      <button id="search-button" class="btn btn-primary">${t('searchButton')}</button>
+      <input id="search-value" placeholder="${t('searchValuePlaceholder')}" aria-label="${t('searchValuePlaceholder')}" />
+      <button id="search-button" type="button" class="btn btn-primary">${t('searchButton')}</button>
     </div>
     <ul id="search-results" class="ticket-list"></ul>
   `;
@@ -39,18 +39,27 @@ export function renderSearchView(container: HTMLElement) {
     resultsList.innerHTML = '';
     for (const ticket of results) {
       const li = document.createElement('li');
-      const summary = document.createElement('span');
-      summary.textContent = `${ticket.customerName} — ${formatItemList(ticket.items)} `;
-      const pill = document.createElement('span');
-      pill.className = `pill ${ticket.status === 'validated' ? 'pill-validated' : 'pill-issued'}`;
-      pill.textContent = t(ticket.status === 'validated' ? 'statusValidated' : 'statusIssued');
-      summary.appendChild(pill);
+      li.className = 'result-row';
+      const head = document.createElement('div');
+      head.className = 'result-head';
+      const name = document.createElement('span');
+      name.className = 'result-name';
+      name.textContent = ticket.customerName;
+      let pill = statusPill(ticket.status, t(ticket.status === 'validated' ? 'statusValidated' : 'statusIssued'));
+      head.append(name, pill);
+      li.appendChild(head);
+      li.appendChild(renderItemLine(ticket));
+      const summary = document.createElement('p');
+      summary.className = 'result-feedback';
+      summary.setAttribute('role', 'status');
       li.appendChild(summary);
 
       if (ticket.status === 'issued') {
         const noteInput = document.createElement('input');
         noteInput.placeholder = t('searchNotePlaceholder');
+        noteInput.setAttribute('aria-label', t('searchNotePlaceholder'));
         const confirmButton = document.createElement('button');
+        confirmButton.type = 'button';
         confirmButton.className = 'btn btn-primary';
         confirmButton.textContent = t('searchValidateButton');
         confirmButton.addEventListener('click', async () => {
@@ -60,22 +69,24 @@ export function renderSearchView(container: HTMLElement) {
               reason?: string;
             };
             if (result.ok) {
-              pill.className = 'pill pill-validated pill-pop';
-              pill.textContent = t('statusValidated');
-              summary.append(t('searchValidatedSuffix'));
+              const validatedPill = statusPill('validated', t('statusValidated'));
+              validatedPill.classList.add('pill-pop');
+              pill.replaceWith(validatedPill);
+              pill = validatedPill;
+              summary.textContent = t('searchValidatedSuffix');
               noteInput.remove();
               confirmButton.remove();
             } else if (result.reason === 'already_validated') {
-              summary.append(t('searchAlreadyPickedUpSuffix'));
+              summary.textContent = t('searchAlreadyPickedUpSuffix');
               noteInput.remove();
               confirmButton.remove();
             } else {
-              summary.append(t('searchNotFoundSuffix'));
+              summary.textContent = t('searchNotFoundSuffix');
               noteInput.remove();
               confirmButton.remove();
             }
           } catch {
-            summary.append(t('searchErrorSuffix'));
+            summary.textContent = t('searchErrorSuffix');
           }
         });
         li.appendChild(noteInput);

@@ -1,23 +1,50 @@
 import { describe, expect, test } from 'vitest';
-import { formatItemList, formatTimestamp, formatDateShort } from './format';
+import { itemNames, collectItemNames, itemTint, ITEM_TINT_COUNT, formatAmount, formatTimestamp, formatDateShort } from './format';
 import { setLang } from './i18n';
 
-describe('formatItemList', () => {
-  test('joins multiple items with quantities', () => {
-    setLang('en');
+describe('itemNames', () => {
+  test('lists item names without quantities', () => {
     expect(
-      formatItemList([
-        { name: 'Widget', quantity: 2 },
+      itemNames([
+        { name: 'Widget', quantity: 1 },
         { name: 'Gadget', quantity: 1 },
       ]),
-    ).toBe('2 × Widget, 1 × Gadget');
+    ).toEqual(['Widget', 'Gadget']);
   });
 
   test('returns a translated message for an empty list', () => {
     setLang('en');
-    expect(formatItemList([])).toBe('No items');
+    expect(itemNames([])).toEqual(['No items']);
     setLang('he');
-    expect(formatItemList([])).toBe('אין פריטים');
+    expect(itemNames([])).toEqual(['אין פריטים']);
+  });
+});
+
+describe('collectItemNames', () => {
+  test('returns distinct names in first-seen order', () => {
+    const tickets = [
+      { items: [{ name: 'Beer', quantity: 1 }] },
+      { items: [{ name: 'Wine', quantity: 1 }, { name: 'Beer', quantity: 1 }] },
+    ];
+    expect(collectItemNames(tickets)).toEqual(['Beer', 'Wine']);
+  });
+});
+
+describe('itemTint', () => {
+  test('is stable and within range', () => {
+    expect(itemTint('Beer')).toBe(itemTint('Beer'));
+    for (const name of ['Beer', 'Wine', 'כרטיס כניסה', '']) {
+      expect(itemTint(name)).toBeGreaterThanOrEqual(0);
+      expect(itemTint(name)).toBeLessThan(ITEM_TINT_COUNT);
+    }
+  });
+});
+
+describe('formatAmount', () => {
+  test('formats whole amounts without decimals and fractional ones with two', () => {
+    setLang('en');
+    expect(formatAmount(60)).toBe('₪60');
+    expect(formatAmount(12.5)).toBe('₪12.50');
   });
 });
 

@@ -65,10 +65,13 @@ export function buildTicketEmailHtml(ticket: Ticket, qrCid: string, settings: Em
   const heroColor = heroTextColor(primaryColor);
   const greetingHtml = escapeHtml(settings.greeting).replace('{customerName}', escapeHtml(ticket.customerName));
 
+  // Grow's payload carries no per-item quantity (only the total paid — see
+  // webhookHandler's parsePayload), so lines show the item name alone and the
+  // amount appears once, in the total row below.
   const itemsHtml = ticket.items
     .map(
       (item) =>
-        `<tr><td style="padding:4px 0;text-align:${align};font-size:16px;color:${DARK_TEXT_COLOR};">${item.quantity} ${escapeHtml(settings.itemSeparator)} ${escapeHtml(item.name)}</td></tr>`,
+        `<tr><td style="padding:4px 0;text-align:${align};font-size:16px;color:${DARK_TEXT_COLOR};">${escapeHtml(item.name)}</td></tr>`,
     )
     .join('');
 

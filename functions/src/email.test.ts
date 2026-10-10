@@ -24,7 +24,6 @@ jest.mock('./settings', () => ({
     dateLabel: 'Date',
     confirmationCodeLabel: 'Confirmation code',
     qrAltText: 'Pickup QR code',
-    itemSeparator: 'x',
     utcOffsetMinutes: 0,
     sendingEnabled: true,
     redirectAllEmails: false,
@@ -64,7 +63,6 @@ const sampleSettings: EmailSettings = {
   dateLabel: 'Date',
   confirmationCodeLabel: 'Confirmation code',
   qrAltText: 'Pickup QR code',
-  itemSeparator: 'x',
   utcOffsetMinutes: 0,
   sendingEnabled: true,
   redirectAllEmails: false,
@@ -77,7 +75,7 @@ describe('buildTicketEmailHtml', () => {
     expect(html).toContain('Jane Doe');
     expect(html).toContain('thanks for your purchase!');
     expect(html).toContain('src="cid:qr-cid-123"');
-    expect(html).toContain('2 x Widget');
+    expect(html).toContain('Widget');
   });
 
   test('does not embed the QR as a data: URI (Gmail does not render those)', () => {
@@ -229,9 +227,10 @@ describe('buildTicketEmailHtml branding', () => {
     expect(html).toContain('alt="Scan to redeem"');
   });
 
-  test('uses a custom itemSeparator', () => {
-    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', { ...sampleSettings, itemSeparator: '×' });
-    expect(html).toContain('2 × Widget');
+  test('lists items by name without a quantity, since Grow sends none', () => {
+    const html = buildTicketEmailHtml(sampleTicket, 'qr-cid-123', sampleSettings);
+    expect(html).toMatch(/>Widget<\/td>/);
+    expect(html).not.toContain('2 x Widget');
   });
 });
 

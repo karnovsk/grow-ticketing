@@ -15,7 +15,6 @@ export interface EmailSettings {
   dateLabel: string;
   confirmationCodeLabel: string;
   qrAltText: string;
-  itemSeparator: string;
   utcOffsetMinutes: number;
   sendingEnabled: boolean;
   redirectAllEmails: boolean;
@@ -37,7 +36,6 @@ const DEFAULT_EMAIL_SETTINGS: EmailSettings = {
   dateLabel: 'Date',
   confirmationCodeLabel: 'Confirmation code',
   qrAltText: 'Pickup QR code',
-  itemSeparator: 'x',
   utcOffsetMinutes: 0,
   sendingEnabled: true,
   redirectAllEmails: false,
@@ -58,7 +56,6 @@ const STRING_FIELDS: (keyof EmailSettings)[] = [
   'dateLabel',
   'confirmationCodeLabel',
   'qrAltText',
-  'itemSeparator',
   'redirectAllEmailsTo',
 ];
 

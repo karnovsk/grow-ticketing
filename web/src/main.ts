@@ -29,6 +29,7 @@ function renderRoute() {
     scanHandle = null;
   }
   currentRoute = (window.location.hash.replace('#', '') || 'scan') as 'scan' | 'search' | 'dashboard';
+  markCurrentNav();
   if (currentRoute === 'scan') scanHandle = renderScanView(view);
   else if (currentRoute === 'search') renderSearchView(view);
   else if (currentRoute === 'dashboard') renderDashboardView(view);
@@ -41,6 +42,13 @@ function renderRoute() {
   view.classList.add('view-enter');
 }
 
+function markCurrentNav() {
+  document.querySelectorAll<HTMLAnchorElement>('nav a').forEach((link) => {
+    if (link.getAttribute('href') === `#${currentRoute}`) link.setAttribute('aria-current', 'page');
+    else link.removeAttribute('aria-current');
+  });
+}
+
 function langToggleLabel(): string {
   return getLang() === 'he' ? 'EN' : 'עב';
 }
@@ -49,6 +57,10 @@ function retranslateHeader() {
   const langButton = document.querySelector<HTMLButtonElement>('#lang-toggle');
   if (langButton) langButton.textContent = langToggleLabel();
   if (!currentUserEmail) return;
+  const brand = document.querySelector<HTMLSpanElement>('#brand');
+  if (brand) brand.textContent = t('appTitle');
+  const nav = document.querySelector<HTMLElement>('nav');
+  if (nav) nav.setAttribute('aria-label', t('navLabel'));
   const headerLabel = document.querySelector<HTMLSpanElement>('#header-label');
   if (headerLabel) headerLabel.textContent = t('headerLoggedInAs', { email: currentUserEmail });
   const logoutButton = document.querySelector<HTMLButtonElement>('#logout-button');
@@ -84,15 +96,20 @@ function renderLogin() {
   }
   app.innerHTML = `
     <header>
-      <span></span>
+      <span class="brand">${t('appTitle')}</span>
       <button id="lang-toggle" class="lang-toggle" type="button">${langToggleLabel()}</button>
     </header>
-    <form id="login-form">
-      <input id="email" type="email" placeholder="${t('loginEmailPlaceholder')}" required />
-      <input id="password" type="password" placeholder="${t('loginPasswordPlaceholder')}" required />
-      <button type="submit" class="btn btn-primary btn-block">${t('loginButton')}</button>
-      <p id="login-error" class="field-error"></p>
-    </form>
+    <main class="login">
+      <form id="login-form" class="card login-card">
+        <h1>${t('appTitle')}</h1>
+        <label for="email">${t('loginEmailPlaceholder')}</label>
+        <input id="email" type="email" autocomplete="username" dir="ltr" required />
+        <label for="password">${t('loginPasswordPlaceholder')}</label>
+        <input id="password" type="password" autocomplete="current-password" dir="ltr" required />
+        <button type="submit" class="btn btn-primary btn-block">${t('loginButton')}</button>
+        <p id="login-error" class="field-error" role="alert"></p>
+      </form>
+    </main>
   `;
   document.querySelector<HTMLButtonElement>('#lang-toggle')!.addEventListener('click', toggleLang);
   const form = document.querySelector<HTMLFormElement>('#login-form')!;
@@ -112,13 +129,16 @@ function renderApp(userEmail: string) {
   currentUserEmail = userEmail;
   app.innerHTML = `
     <header>
-      <span id="header-label">${t('headerLoggedInAs', { email: userEmail })}</span>
+      <div class="header-identity">
+        <span id="brand" class="brand">${t('appTitle')}</span>
+        <span id="header-label" class="header-user"></span>
+      </div>
       <div class="header-actions">
         <button id="lang-toggle" class="lang-toggle" type="button">${langToggleLabel()}</button>
-        <button id="logout-button" class="btn btn-secondary">${t('headerLogoutButton')}</button>
+        <button id="logout-button" class="btn-ghost" type="button">${t('headerLogoutButton')}</button>
       </div>
     </header>
-    <nav>
+    <nav aria-label="${t('navLabel')}">
       <a href="#scan">${t('navScan')}</a>
       <a href="#dashboard">${t('navDashboard')}</a>
       <a href="#search">${t('navSearch')}</a>
@@ -126,6 +146,8 @@ function renderApp(userEmail: string) {
     <main id="view"></main>
   `;
   document.querySelector<HTMLButtonElement>('#lang-toggle')!.addEventListener('click', toggleLang);
+  // Set via textContent, not the template above: the email is account data.
+  document.querySelector<HTMLSpanElement>('#header-label')!.textContent = t('headerLoggedInAs', { email: userEmail });
   document.querySelector<HTMLButtonElement>('#logout-button')!.addEventListener('click', () => logout());
 
   if (!hashListenerAttached) {

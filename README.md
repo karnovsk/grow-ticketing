@@ -145,7 +145,6 @@ Open **Firebase console → Firestore Database**, and create (or edit) a documen
 - `qrInstructions` — text shown under the QR code
 - `qrAltText` — alt text for the QR image (accessibility/fallback text, not usually visible)
 - `itemsLabel`, `totalLabel`, `dateLabel`, `confirmationCodeLabel` — receipt section labels (the template appends `:` after each automatically, so don't include one in the value)
-- `itemSeparator` — the text between quantity and item name in each line (default `"x"`, e.g. `"2 x Widget"`)
 - `businessName` — shown in the hero band
 
 **Branding:**

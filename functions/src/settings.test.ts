@@ -33,7 +33,6 @@ describe('getEmailSettings', () => {
     expect(settings.dateLabel).toBe('Date');
     expect(settings.confirmationCodeLabel).toBe('Confirmation code');
     expect(settings.qrAltText).toBe('Pickup QR code');
-    expect(settings.itemSeparator).toBe('x');
     expect(settings.utcOffsetMinutes).toBe(0);
     expect(settings.itemsLabel).toBe('Items');
   });
