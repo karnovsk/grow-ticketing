@@ -19,6 +19,7 @@ export type TranslationKey =
   | 'resetBackToLogin'
   | 'headerLoggedInAs'
   | 'headerLogoutButton'
+  | 'beerEggLabel'
   | 'navScan'
   | 'navSearch'
   | 'navDashboard'
@@ -103,6 +104,7 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     resetBackToLogin: 'Back to log in',
     headerLoggedInAs: 'Logged in as {{email}}',
     headerLogoutButton: 'Log out',
+    beerEggLabel: 'Cheers',
     navScan: 'Scan',
     navSearch: 'Search by Trans. Code',
     navDashboard: 'Tickets',
@@ -186,6 +188,7 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     resetBackToLogin: 'חזרה להתחברות',
     headerLoggedInAs: 'מחובר/ת כ-{{email}}',
     headerLogoutButton: 'התנתקות',
+    beerEggLabel: 'לחיים',
     navScan: 'סריקה',
     navSearch: 'חיפוש לפי אסמכתא',
     navDashboard: 'כרטיסים',

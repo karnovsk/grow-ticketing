@@ -236,6 +236,52 @@ nav :focus-visible {
   outline-color: var(--focus-chrome);
 }
 
+.header-start {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+/* Easter egg (see beerPour.ts): looks like a plain brand mark, but pours. */
+.beer-egg {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  min-width: 44px;
+  min-height: 44px;
+  margin-inline-start: -0.5rem;
+  padding: 0;
+  color: var(--chrome-ink);
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.beer-egg .icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  stroke-width: 1.75;
+}
+
+.beer-egg:hover {
+  background: var(--chrome-hover);
+}
+
+.beer-egg:active .icon {
+  transform: rotate(-14deg);
+}
+
+.beer-pour {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2147483647;
+  touch-action: none;
+}
+
 .header-identity {
   display: flex;
   flex-direction: column;

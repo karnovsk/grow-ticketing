@@ -4,6 +4,7 @@ import { login, logout, watchAuthState, requestPasswordReset } from './auth';
 import { renderScanView, ScanViewHandle } from './scanView';
 import { renderSearchView } from './searchView';
 import { renderDashboardView } from './dashboardView';
+import { pourBeer } from './beerPour';
 import { t, getLang, setLang, applyDir, Lang } from './i18n';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
@@ -65,6 +66,8 @@ function retranslateHeader() {
   if (brand) brand.textContent = t('appTitle');
   const nav = document.querySelector<HTMLElement>('nav');
   if (nav) nav.setAttribute('aria-label', t('navLabel'));
+  const beerEgg = document.querySelector<HTMLButtonElement>('#beer-egg');
+  if (beerEgg) beerEgg.setAttribute('aria-label', t('beerEggLabel'));
   const headerLabel = document.querySelector<HTMLSpanElement>('#header-label');
   if (headerLabel) headerLabel.textContent = t('headerLoggedInAs', { email: currentUserEmail });
   const logoutButton = document.querySelector<HTMLButtonElement>('#logout-button');
@@ -220,9 +223,19 @@ function renderApp(userEmail: string) {
   currentUserEmail = userEmail;
   app.innerHTML = `
     <header>
-      <div class="header-identity">
-        <span id="brand" class="brand">${t('appTitle')}</span>
-        <span id="header-label" class="header-user"></span>
+      <div class="header-start">
+        <button id="beer-egg" class="beer-egg" type="button" aria-label="${t('beerEggLabel')}">
+          <svg viewBox="0 0 24 24" aria-hidden="true" class="icon">
+            <path d="M5 9h10v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z" />
+            <path d="M15 11.5h1.5a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H15" />
+            <path d="M4.5 9a2.5 2.5 0 0 1 2-4 3.2 3.2 0 0 1 5.5-1 2.6 2.6 0 0 1 3.5 3.3V9" />
+            <path d="M8.5 13v4.5M11.5 13v4.5" />
+          </svg>
+        </button>
+        <div class="header-identity">
+          <span id="brand" class="brand">${t('appTitle')}</span>
+          <span id="header-label" class="header-user"></span>
+        </div>
       </div>
       <div class="header-actions">
         <button id="lang-toggle" class="lang-toggle" type="button">${langToggleLabel()}</button>
@@ -240,6 +253,7 @@ function renderApp(userEmail: string) {
   // Set via textContent, not the template above: the email is account data.
   document.querySelector<HTMLSpanElement>('#header-label')!.textContent = t('headerLoggedInAs', { email: userEmail });
   document.querySelector<HTMLButtonElement>('#logout-button')!.addEventListener('click', () => logout());
+  document.querySelector<HTMLButtonElement>('#beer-egg')!.addEventListener('click', pourBeer);
 
   if (!hashListenerAttached) {
     window.addEventListener('hashchange', renderRoute);
