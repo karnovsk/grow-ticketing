@@ -56,8 +56,8 @@ describe('archiveOldTickets', () => {
     await admin.app().delete();
   });
 
-  test('archives a ticket picked up more than 50 days ago', async () => {
-    const id = await pickedUp(51);
+  test('archives a ticket picked up more than 180 days ago', async () => {
+    const id = await pickedUp(181);
     const result = await archiveOldTickets(NOW);
     expect(result).toMatchObject({ pickedUp: 1, unclaimed: 0 });
     expect(await getTicketById(id)).toBeNull();
@@ -66,8 +66,8 @@ describe('archiveOldTickets', () => {
     expect(copy!.archivedAt.toMillis()).toBe(NOW.getTime());
   });
 
-  test('keeps a ticket picked up less than 50 days ago, however long ago it was sold', async () => {
-    const id = await pickedUp(49, 400);
+  test('keeps a ticket picked up less than 180 days ago, however long ago it was sold', async () => {
+    const id = await pickedUp(179, 400);
     const result = await archiveOldTickets(NOW);
     expect(result).toMatchObject({ pickedUp: 0, unclaimed: 0 });
     expect(await getTicketById(id)).not.toBeNull();
@@ -78,7 +78,7 @@ describe('archiveOldTickets', () => {
     const old = await unclaimed(366);
     const recent = await unclaimed(364);
     // Well past the picked-up threshold, but it was never picked up.
-    const middling = await unclaimed(120);
+    const middling = await unclaimed(200);
     const result = await archiveOldTickets(NOW);
     expect(result).toMatchObject({ pickedUp: 0, unclaimed: 1 });
     expect(await archived(old)).toMatchObject({ status: 'issued', archiveReason: 'unclaimed' });
@@ -93,7 +93,7 @@ describe('archiveOldTickets', () => {
   });
 
   test('works through more tickets than fit in one page', async () => {
-    const ids = await Promise.all(Array.from({ length: 230 }, () => pickedUp(60)));
+    const ids = await Promise.all(Array.from({ length: 230 }, () => pickedUp(200)));
     const result = await archiveOldTickets(NOW);
     expect(result.pickedUp).toBe(230);
     const left = await db.collection('tickets').get();
@@ -103,7 +103,7 @@ describe('archiveOldTickets', () => {
 
   test('dry run reports what would move without touching anything', async () => {
     await db.collection('settings').doc('archive').set({ dryRun: true });
-    const a = await pickedUp(80);
+    const a = await pickedUp(200);
     const b = await unclaimed(500);
     const result = await archiveOldTickets(NOW);
     expect(result).toEqual({ enabled: true, dryRun: true, pickedUp: 1, unclaimed: 1 });
@@ -114,7 +114,7 @@ describe('archiveOldTickets', () => {
 
   test('does nothing when disabled in settings', async () => {
     await db.collection('settings').doc('archive').set({ enabled: false });
-    const id = await pickedUp(80);
+    const id = await pickedUp(200);
     const result = await archiveOldTickets(NOW);
     expect(result).toEqual({ enabled: false, dryRun: false, pickedUp: 0, unclaimed: 0 });
     expect(await getTicketById(id)).not.toBeNull();

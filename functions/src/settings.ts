@@ -98,7 +98,7 @@ export interface ArchiveSettings {
 const DEFAULT_ARCHIVE_SETTINGS: ArchiveSettings = {
   enabled: true,
   dryRun: false,
-  pickedUpAfterDays: 50,
+  pickedUpAfterDays: 180,
   unclaimedAfterDays: 365,
 };
 
