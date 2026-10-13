@@ -37,9 +37,7 @@ export type TranslationKey =
   | 'scanPickedUpTitle'
   | 'scanNextButton'
   | 'scanCameraError'
-  | 'searchFieldTicketId'
   | 'searchFieldTransaction'
-  | 'searchValuePlaceholder'
   | 'searchButton'
   | 'searchNotePlaceholder'
   | 'searchValidateButton'
@@ -122,9 +120,7 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     scanPickedUpTitle: 'Picked up',
     scanNextButton: 'Scan next',
     scanCameraError: 'Could not access the camera. Check camera permissions and try again.',
-    searchFieldTicketId: 'Ticket ID',
     searchFieldTransaction: 'Transaction code',
-    searchValuePlaceholder: 'Search value',
     searchButton: 'Search',
     searchNotePlaceholder: 'Verification note (e.g. verified via ID)',
     searchValidateButton: 'Validate manually',
@@ -206,9 +202,7 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     scanPickedUpTitle: 'נמסר',
     scanNextButton: 'לסריקה הבאה',
     scanCameraError: 'לא ניתן לגשת למצלמה. בדקו את הרשאות המצלמה ונסו שוב.',
-    searchFieldTicketId: 'מזהה כרטיס',
     searchFieldTransaction: 'קוד עסקה',
-    searchValuePlaceholder: 'ערך לחיפוש',
     searchButton: 'חיפוש',
     searchNotePlaceholder: 'הערת אימות (למשל: אומת לפי ת.ז.)',
     searchValidateButton: 'אישור ידני',
@@ -216,7 +210,7 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     searchAlreadyPickedUpSuffix: 'כבר נמסר — איש צוות אחר אישר אותו הרגע.',
     searchNotFoundSuffix: 'הכרטיס לא נמצא.',
     searchErrorSuffix: 'הפעולה לא הושלמה. נסו שוב.',
-    statusIssued: 'הונפק',
+    statusIssued: 'נרכש',
     statusValidated: 'נמסר',
     statusAll: 'הכל',
     dashboardFilterPlaceholder: 'סינון לפי שם, אימייל או טלפון',
@@ -242,7 +236,7 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     dashboardDetailCustomerPhone: 'טלפון',
     dashboardDetailTransactionCode: 'קוד עסקה',
     dashboardDetailPaymentSum: 'שולם',
-    dashboardDetailIssuedAt: 'הונפק',
+    dashboardDetailIssuedAt: 'נרכש',
     dashboardDetailValidatedAt: 'נמסר',
     dashboardDetailValidatedBy: 'נמסר על ידי',
     dashboardDetailValidationNote: 'הערה',

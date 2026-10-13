@@ -1030,14 +1030,9 @@ main.login {
     flex-direction: row;
   }
 
-  .search-controls input,
-  .search-controls select {
+  .search-controls input {
     width: auto;
     flex: 1;
-  }
-
-  .search-controls input {
-    flex: 2;
   }
 }
 

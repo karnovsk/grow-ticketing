@@ -1,32 +1,21 @@
-import { searchTicketsByField, getTicketById, validateTicket, TicketRecord } from './ticketApi';
+import { searchTicketsByField, validateTicket, TicketRecord } from './ticketApi';
 import { renderItemLine, statusPill } from './itemTags';
 import { t } from './i18n';
 
 export function renderSearchView(container: HTMLElement) {
   container.innerHTML = `
     <div class="search-controls">
-      <select id="search-field" aria-label="${t('searchFieldTicketId')} / ${t('searchFieldTransaction')}">
-        <option value="ticketId">${t('searchFieldTicketId')}</option>
-        <option value="transactionCode">${t('searchFieldTransaction')}</option>
-      </select>
-      <input id="search-value" placeholder="${t('searchValuePlaceholder')}" aria-label="${t('searchValuePlaceholder')}" />
+      <input id="search-value" placeholder="${t('searchFieldTransaction')}" aria-label="${t('searchFieldTransaction')}" />
       <button id="search-button" type="button" class="btn btn-primary">${t('searchButton')}</button>
     </div>
     <ul id="search-results" class="ticket-list"></ul>
   `;
 
-  const fieldSelect = container.querySelector<HTMLSelectElement>('#search-field')!;
   const valueInput = container.querySelector<HTMLInputElement>('#search-value')!;
   const resultsList = container.querySelector<HTMLUListElement>('#search-results')!;
 
   async function runSearch() {
-    const field = fieldSelect.value as 'ticketId' | 'transactionCode';
-    if (field === 'ticketId') {
-      const ticket = await getTicketById(valueInput.value);
-      renderResults(ticket ? [ticket] : []);
-      return;
-    }
-    const results = await searchTicketsByField(field, valueInput.value);
+    const results = await searchTicketsByField('transactionCode', valueInput.value);
     renderResults(results);
   }
 
