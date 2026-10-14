@@ -46,8 +46,17 @@ export interface CreateTicketIfNewResult {
   created: boolean;
 }
 
+// Grow's transactionCodes are base64, so they often contain '/', which
+// Firestore would read as a path separator (crashing the webhook, or nesting
+// the lock in a subcollection). Escape it — and '%', so the mapping stays
+// one-to-one. Codes with neither keep their raw value as the ID, which keeps
+// locks written before this escaping existed valid.
+function lockIdFor(transactionCode: string): string {
+  return transactionCode.replace(/%/g, '%25').replace(/\//g, '%2F');
+}
+
 export async function createTicketIfNew(input: NewTicketInput): Promise<CreateTicketIfNewResult> {
-  const lockRef = db.collection(TRANSACTION_LOCKS_COLLECTION).doc(input.transactionCode);
+  const lockRef = db.collection(TRANSACTION_LOCKS_COLLECTION).doc(lockIdFor(input.transactionCode));
   const ticketId = randomUUID();
   return db.runTransaction(async (tx): Promise<CreateTicketIfNewResult> => {
     const lockDoc = await tx.get(lockRef);

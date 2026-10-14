@@ -67,6 +67,11 @@ describe('handleGrowWebhook', () => {
     expect(result.status).toBe(400);
   });
 
+  test('rejects a payload with an empty transactionCode', async () => {
+    const result = await handleGrowWebhook({ ...validPayload, transactionCode: '' });
+    expect(result.status).toBe(400);
+  });
+
   test('rejects a payload with a non-numeric paymentSum', async () => {
     const result = await handleGrowWebhook({ ...validPayload, paymentSum: 'not-a-number' });
     expect(result.status).toBe(400);

@@ -43,7 +43,7 @@ function parsePayload(body: unknown): GrowWebhookPayload | null {
   if (typeof body !== 'object' || body === null) return null;
   const record = body as Record<string, unknown>;
   if (typeof record.webhookKey !== 'string') return null;
-  if (typeof record.transactionCode !== 'string') return null;
+  if (typeof record.transactionCode !== 'string' || record.transactionCode.length === 0) return null;
   if (typeof record.payerEmail !== 'string') return null;
   if (typeof record.paymentDesc !== 'string' || record.paymentDesc.length === 0) return null;
 

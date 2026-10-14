@@ -58,6 +58,23 @@ describe('ticketService', () => {
     expect(a.ticket.ticketId).toBe(b.ticket.ticketId);
   });
 
+  test('createTicketIfNew handles transactionCodes containing slashes', async () => {
+    const slashed = { ...sampleInput, transactionCode: 'EEXZGMgEV/KgMn6RPS8qow==' };
+    const first = await createTicketIfNew(slashed);
+    const second = await createTicketIfNew(slashed);
+    expect(first.created).toBe(true);
+    expect(first.ticket.transactionCode).toBe('EEXZGMgEV/KgMn6RPS8qow==');
+    expect(second.created).toBe(false);
+    expect(second.ticket.ticketId).toBe(first.ticket.ticketId);
+  });
+
+  test('createTicketIfNew keeps an escaped-looking code distinct from its slashed twin', async () => {
+    const slashed = await createTicketIfNew({ ...sampleInput, transactionCode: 'a/b' });
+    const literal = await createTicketIfNew({ ...sampleInput, transactionCode: 'a%2Fb' });
+    expect(literal.created).toBe(true);
+    expect(literal.ticket.ticketId).not.toBe(slashed.ticket.ticketId);
+  });
+
   test('getTicketById returns null for an unknown id', async () => {
     const found = await getTicketById('does-not-exist');
     expect(found).toBeNull();
