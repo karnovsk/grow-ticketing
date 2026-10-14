@@ -127,12 +127,6 @@ export function renderScanView(container: HTMLElement): ScanViewHandle {
           window.location.hash = 'search';
         }, 'btn-secondary btn-block'),
       ]);
-    } else if (state.phase === 'preview') {
-      const ticket = state.ticket;
-      renderOutcome('ready', null, ticket, null, [
-        button(t('scanConfirmButton'), () => confirm(ticket), 'btn-primary btn-block btn-large'),
-        button(t('scanAgainButton'), resumeScanning, 'btn-secondary btn-block'),
-      ]);
     } else if (state.phase === 'previewAlreadyValidated') {
       const detail = t('scanAlreadyPickedUpDetail', {
         time: state.ticket.validatedAt ? formatTimestamp(state.ticket.validatedAt.seconds) : '',
@@ -166,6 +160,12 @@ export function renderScanView(container: HTMLElement): ScanViewHandle {
     } catch {
       state = { phase: 'lookupError' };
     }
+    // An issued ticket is marked picked up straight away — no approval step.
+    // Mistakes are undone from the dashboard's invalidate action instead.
+    if (state.phase === 'preview') {
+      await confirm(state.ticket);
+      return;
+    }
     render();
   }
 
@@ -177,7 +177,7 @@ export function renderScanView(container: HTMLElement): ScanViewHandle {
       const nextPhase = resolveConfirmOutcome(outcome);
       if (nextPhase === 'resultAlreadyValidated') {
         // Deliberately reuse the ticket already in scope (from the preceding
-        // preview lookup) rather than refetching. The validateTicket callable
+        // lookup) rather than refetching. The validateTicket callable
         // does return a `ticket` field on this branch, but its validatedAt
         // comes from the Admin SDK's Timestamp serialized over the wire as
         // `{ _seconds, _nanoseconds }` — not the `{ seconds }` shape TicketRecord
@@ -207,7 +207,7 @@ export function renderScanView(container: HTMLElement): ScanViewHandle {
       async (decodedText) => {
         if (state.phase !== 'scanning') return;
         // Pause the video feed itself (not just decode scanning) and hide the
-        // reader element via render() below — the approval card should have
+        // reader element via render() below — the outcome card should have
         // the staff member's full attention, not a frozen camera preview
         // competing for space above it.
         scanner.pause(true);

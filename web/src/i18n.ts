@@ -30,7 +30,6 @@ export type TranslationKey =
   | 'scanNotFoundTitle'
   | 'scanNotFoundSearchLink'
   | 'scanAgainButton'
-  | 'scanConfirmButton'
   | 'scanAlreadyPickedUpTitle'
   | 'scanAlreadyPickedUpDetail'
   | 'scanConfirmingButton'
@@ -113,7 +112,6 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     scanNotFoundTitle: 'Ticket not found',
     scanNotFoundSearchLink: 'Search manually instead',
     scanAgainButton: 'Scan again',
-    scanConfirmButton: 'Confirm pickup',
     scanAlreadyPickedUpTitle: 'Already picked up',
     scanAlreadyPickedUpDetail: 'Validated {{time}} by {{staff}}',
     scanConfirmingButton: 'Confirming…',
@@ -195,7 +193,6 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     scanNotFoundTitle: 'הכרטיס לא נמצא',
     scanNotFoundSearchLink: 'חיפוש ידני במקום זאת',
     scanAgainButton: 'סרקו שוב',
-    scanConfirmButton: 'אישור מסירה',
     scanAlreadyPickedUpTitle: 'כבר נמסר',
     scanAlreadyPickedUpDetail: 'אושר ב-{{time}} על ידי {{staff}}',
     scanConfirmingButton: 'מאשר…',
