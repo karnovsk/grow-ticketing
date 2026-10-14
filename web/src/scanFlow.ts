@@ -4,6 +4,7 @@ export type ScanState =
   | { phase: 'scanning' }
   | { phase: 'cameraError' }
   | { phase: 'lookupError' }
+  | { phase: 'lookingUp' }
   | { phase: 'previewNotFound' }
   | { phase: 'preview'; ticket: TicketRecord }
   | { phase: 'previewAlreadyValidated'; ticket: TicketRecord }

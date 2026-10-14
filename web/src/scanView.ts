@@ -135,6 +135,10 @@ export function renderScanView(container: HTMLElement): ScanViewHandle {
       renderOutcome('warning', t('scanAlreadyPickedUpTitle'), state.ticket, detail, [
         button(t('scanAgainButton'), resumeScanning, 'btn-secondary btn-block'),
       ]);
+    } else if (state.phase === 'lookingUp') {
+      renderOutcome('ready', null, null, null, [
+        button(t('scanConfirmingButton'), () => {}, 'btn-primary btn-block btn-large', true),
+      ]);
     } else if (state.phase === 'confirming') {
       renderOutcome('ready', null, state.ticket, null, [
         button(t('scanConfirmingButton'), () => {}, 'btn-primary btn-block btn-large', true),
@@ -154,6 +158,10 @@ export function renderScanView(container: HTMLElement): ScanViewHandle {
 
   async function lookUp(ticketId: string) {
     lastScannedId = ticketId;
+    // Show progress the moment a code is read, before the ticket has even
+    // loaded — otherwise the frozen camera frame is all staff see.
+    state = { phase: 'lookingUp' };
+    render();
     try {
       const ticket = await getTicketById(ticketId);
       state = resolveLookup(ticket);
