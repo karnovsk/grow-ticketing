@@ -196,7 +196,7 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     scanAlreadyPickedUpTitle: 'כבר נמסר',
     scanAlreadyPickedUpDetail: 'אושר ב-{{time}} על ידי {{staff}}',
     scanConfirmingButton: 'מאשר…',
-    scanPickedUpTitle: 'נמסר',
+    scanPickedUpTitle: 'אושר',
     scanNextButton: 'לסריקה הבאה',
     scanCameraError: 'לא ניתן לגשת למצלמה. בדקו את הרשאות המצלמה ונסו שוב.',
     searchFieldTransaction: 'קוד עסקה',
