@@ -153,6 +153,7 @@ Open **Firebase console → Firestore Database**, and create (or edit) a documen
 
 **Text (string fields):**
 - `fromName` — display name shown before the sender address (e.g. `"הברונית - פאב קהילתי"`); the address itself stays `TICKET_EMAIL_FROM` (Resend) or `GMAIL_USER` (Gmail). Omit or leave empty to send from the bare address.
+- `replyTo` — address buyers' replies go to (the sender address itself may not be able to receive mail); omit or leave empty to send without a Reply-To.
 - `subject` — email subject line
 - `greeting` — the opening line under the business name; include the literal token `{customerName}` anywhere in the text to have it replaced with the buyer's name (e.g. `"Hi {customerName}, thanks for your purchase!"`, or in Hebrew `"שלום {customerName}, ההזמנה שלך מוכנה לאיסוף!"`). The token is optional — omit it if you don't want the name shown.
 - `qrInstructions` — text shown under the QR code

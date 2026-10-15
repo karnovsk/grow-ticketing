@@ -153,6 +153,30 @@ export function buildTicketEmailHtml(ticket: Ticket, qrCid: string, settings: Em
 `;
 }
 
+// Plain-text alternative sent alongside the HTML: HTML-only mail (especially
+// image-heavy) scores worse with spam filters, and it's what text-only
+// clients show. Carries the same receipt details; the QR itself is only
+// visible in the HTML version.
+export function buildTicketEmailText(ticket: Ticket, settings: EmailSettings): string {
+  const greeting = settings.greeting.replace('{customerName}', ticket.customerName);
+  const items = ticket.items.map((item) => `- ${item.name}`).join('\n');
+  return [
+    settings.businessName,
+    '',
+    greeting,
+    '',
+    settings.qrInstructions,
+    '',
+    `${settings.itemsLabel}:`,
+    items,
+    `${settings.totalLabel}: ${settings.currencySymbol}${ticket.paymentSum.toFixed(2)}`,
+    '',
+    `${settings.confirmationCodeLabel}: ${ticket.transactionCode}`,
+    `${settings.dateLabel}: ${formatDate(ticket.issuedAt, settings.utcOffsetMinutes)}`,
+    '',
+  ].join('\n');
+}
+
 function qrDataUriToBuffer(qrDataUri: string): Buffer {
   return Buffer.from(qrDataUri.split(',')[1], 'base64');
 }
@@ -186,6 +210,8 @@ async function sendViaResend(ticket: Ticket, qrDataUri: string): Promise<boolean
       to: ticket.customerEmail,
       subject: settings.subject,
       html: buildTicketEmailHtml(ticket, QR_IMAGE_CID, settings),
+      text: buildTicketEmailText(ticket, settings),
+      ...(settings.replyTo ? { reply_to: settings.replyTo } : {}),
       attachments: [
         {
           filename: 'ticket-qr.png',
@@ -218,6 +244,8 @@ async function sendViaGmail(ticket: Ticket, qrDataUri: string): Promise<boolean>
       to: ticket.customerEmail,
       subject: settings.subject,
       html: buildTicketEmailHtml(ticket, QR_IMAGE_CID, settings),
+      text: buildTicketEmailText(ticket, settings),
+      ...(settings.replyTo ? { replyTo: settings.replyTo } : {}),
       attachments: [
         {
           filename: 'ticket-qr.png',

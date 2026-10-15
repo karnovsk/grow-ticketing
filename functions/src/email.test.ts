@@ -1,5 +1,5 @@
 import { Timestamp } from 'firebase-admin/firestore';
-import { buildTicketEmailHtml, sendTicketEmail, QR_IMAGE_CID } from './email';
+import { buildTicketEmailHtml, buildTicketEmailText, sendTicketEmail, QR_IMAGE_CID } from './email';
 import { Ticket } from './types';
 import { EmailSettings, getEmailSettings } from './settings';
 
@@ -11,6 +11,7 @@ jest.mock('nodemailer', () => ({
 jest.mock('./settings', () => ({
   getEmailSettings: jest.fn().mockResolvedValue({
     fromName: '',
+    replyTo: '',
     subject: 'Your pickup ticket',
     preheader: 'Your ticket QR code is inside. Show it at pickup.',
     greeting: 'Hi {customerName}, thanks for your purchase!',
@@ -51,6 +52,7 @@ const sampleTicket: Ticket = {
 
 const sampleSettings: EmailSettings = {
   fromName: '',
+  replyTo: '',
   subject: 'Your pickup ticket',
   preheader: 'Your ticket QR code is inside. Show it at pickup.',
   greeting: 'Hi {customerName}, thanks for your purchase!',
@@ -307,6 +309,22 @@ describe('buildTicketEmailHtml direction', () => {
   });
 });
 
+describe('buildTicketEmailText', () => {
+  test('includes the greeting with the customer name, items, total, confirmation code and date', () => {
+    const text = buildTicketEmailText(sampleTicket, sampleSettings);
+    expect(text).toContain('Hi Jane Doe, thanks for your purchase!');
+    expect(text).toContain(sampleSettings.qrInstructions);
+    for (const item of sampleTicket.items) expect(text).toContain(`- ${item.name}`);
+    expect(text).toContain(`Total: $${sampleTicket.paymentSum.toFixed(2)}`);
+    expect(text).toContain(`Confirmation code: ${sampleTicket.transactionCode}`);
+    expect(text).toMatch(/Date: \d{2}\.\d{2}\.\d{4}/);
+  });
+
+  test('contains no HTML markup', () => {
+    expect(buildTicketEmailText(sampleTicket, sampleSettings)).not.toMatch(/<[a-z]/i);
+  });
+});
+
 describe('sendTicketEmail (resend)', () => {
   const originalFetch = global.fetch;
   const originalProvider = process.env.EMAIL_PROVIDER;
@@ -369,6 +387,29 @@ describe('sendTicketEmail (resend)', () => {
     expect(body.from).toBe('"Joe \\"the\\" Pub" <tickets@verified-domain.example>');
   });
 
+  test('includes a plain-text alternative alongside the html', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: true } as Response);
+    await sendTicketEmail(sampleTicket, 'data:image/png;base64,ABC');
+    const body = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body);
+    expect(body.text).toBe(buildTicketEmailText(sampleTicket, sampleSettings));
+  });
+
+  test('omits reply_to when no replyTo is configured', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: true } as Response);
+    await sendTicketEmail(sampleTicket, 'data:image/png;base64,ABC');
+    const body = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body);
+    expect(body).not.toHaveProperty('reply_to');
+  });
+
+  test('sets reply_to to the configured replyTo', async () => {
+    const settings = { ...sampleSettings, replyTo: 'pub@example.com' };
+    (getEmailSettings as jest.Mock).mockResolvedValueOnce(settings).mockResolvedValueOnce(settings);
+    global.fetch = jest.fn().mockResolvedValue({ ok: true } as Response);
+    await sendTicketEmail(sampleTicket, 'data:image/png;base64,ABC');
+    const body = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body);
+    expect(body.reply_to).toBe('pub@example.com');
+  });
+
   test('returns false when Resend responds with an error', async () => {
     global.fetch = jest.fn().mockResolvedValue({ ok: false } as Response);
     const result = await sendTicketEmail(sampleTicket, 'data:image/png;base64,ABC');
@@ -424,6 +465,16 @@ describe('sendTicketEmail (gmail)', () => {
     sendMailMock.mockResolvedValue(undefined);
     await sendTicketEmail(sampleTicket, 'data:image/png;base64,ABC');
     expect(sendMailMock.mock.calls[0][0].from).toEqual({ name: 'הברונית - פאב קהילתי', address: 'tickets@gmail.com' });
+  });
+
+  test('sends a plain-text alternative and the configured replyTo', async () => {
+    const settings = { ...sampleSettings, replyTo: 'pub@example.com' };
+    (getEmailSettings as jest.Mock).mockResolvedValueOnce(settings).mockResolvedValueOnce(settings);
+    sendMailMock.mockResolvedValue(undefined);
+    await sendTicketEmail(sampleTicket, 'data:image/png;base64,ABC');
+    const call = sendMailMock.mock.calls[0][0];
+    expect(call.text).toBe(buildTicketEmailText(sampleTicket, settings));
+    expect(call.replyTo).toBe('pub@example.com');
   });
 
   test('attaches the QR as an inline cid attachment instead of a data: URI in the html', async () => {

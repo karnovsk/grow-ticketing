@@ -2,6 +2,7 @@ import { db } from './admin';
 
 export interface EmailSettings {
   fromName: string;
+  replyTo: string;
   subject: string;
   preheader: string;
   greeting: string;
@@ -24,6 +25,7 @@ export interface EmailSettings {
 
 const DEFAULT_EMAIL_SETTINGS: EmailSettings = {
   fromName: '',
+  replyTo: '',
   subject: 'Your pickup ticket',
   preheader: 'Your ticket QR code is inside. Show it at pickup.',
   greeting: 'Hi {customerName}, thanks for your purchase!',
@@ -46,6 +48,7 @@ const DEFAULT_EMAIL_SETTINGS: EmailSettings = {
 
 const STRING_FIELDS: (keyof EmailSettings)[] = [
   'fromName',
+  'replyTo',
   'subject',
   'preheader',
   'greeting',
