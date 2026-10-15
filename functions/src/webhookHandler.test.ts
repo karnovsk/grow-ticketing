@@ -77,6 +77,35 @@ describe('handleGrowWebhook', () => {
     expect(result.status).toBe(400);
   });
 
+  test('skips app sales without creating a ticket or sending an email', async () => {
+    const { sendTicketEmail } = jest.requireMock('./email');
+    sendTicketEmail.mockClear();
+    const result = await handleGrowWebhook({
+      ...validPayload,
+      paymentSource: 'אפלקציה',
+      fullName: ' ',
+      payerEmail: '',
+      payerPhone: '',
+    });
+    expect(result.status).toBe(200);
+    expect(result.body).toEqual({ skipped: true, reason: 'app_sale' });
+
+    const tickets = await db.collection('tickets').where('transactionCode', '==', validPayload.transactionCode).get();
+    expect(tickets.empty).toBe(true);
+    expect(sendTicketEmail).not.toHaveBeenCalled();
+  });
+
+  test('still rejects an app sale with the wrong webhook key', async () => {
+    const result = await handleGrowWebhook({ ...validPayload, paymentSource: 'אפלקציה', webhookKey: 'wrong' });
+    expect(result.status).toBe(401);
+  });
+
+  test('persists an app sale to webhookLogs even though it is skipped', async () => {
+    await handleGrowWebhook({ ...validPayload, paymentSource: 'אפלקציה' });
+    const logs = await db.collection('webhookLogs').get();
+    expect(logs.docs.map((d) => d.data().body.paymentSource)).toContain('אפלקציה');
+  });
+
   test('maps a real Grow Payment Links payload onto the created ticket', async () => {
     const result = await handleGrowWebhook(validPayload);
     expect(result.status).toBe(200);

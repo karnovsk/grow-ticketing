@@ -31,5 +31,6 @@ export interface GrowWebhookPayload {
   payerFullName?: string;
   payerEmail?: string;
   payerPhone?: string;
+  paymentSource?: string;
   productData: TicketItem[];
 }

@@ -14,6 +14,12 @@ export interface WebhookResult {
 
 const WEBHOOK_LOGS_COLLECTION = 'webhookLogs';
 
+// Sales charged in Grow's own app (e.g. beers rung up at the bar) arrive with
+// paymentSource "אפלקציה" and no buyer name/phone/email, so a ticket for them
+// could never be delivered to anyone — they're acknowledged without creating
+// one. Still persisted to webhookLogs like every other call.
+const SKIPPED_PAYMENT_SOURCES = new Set(['אפלקציה']);
+
 function redactForLogging(body: unknown): unknown {
   if (typeof body !== 'object' || body === null) return body;
   const record = { ...(body as Record<string, unknown>) };
@@ -57,6 +63,7 @@ function parsePayload(body: unknown): GrowWebhookPayload | null {
     payerFullName: typeof record.fullName === 'string' ? record.fullName : undefined,
     payerEmail: record.payerEmail,
     payerPhone: typeof record.payerPhone === 'string' ? record.payerPhone : undefined,
+    paymentSource: typeof record.paymentSource === 'string' ? record.paymentSource : undefined,
     productData: [{ name: record.paymentDesc, quantity: 1 }],
   };
 }
@@ -74,6 +81,13 @@ export async function handleGrowWebhook(rawBody: unknown): Promise<WebhookResult
   if (!verifyWebhookKey(payload)) {
     logger.warn('Rejected Grow webhook: invalid webhookKey', { transactionCode: payload.transactionCode });
     return { status: 401, body: { error: 'invalid_webhook_key' } };
+  }
+  if (payload.paymentSource && SKIPPED_PAYMENT_SOURCES.has(payload.paymentSource)) {
+    logger.info('Skipped Grow webhook: app sale, no ticket created', {
+      transactionCode: payload.transactionCode,
+      paymentSource: payload.paymentSource,
+    });
+    return { status: 200, body: { skipped: true, reason: 'app_sale' } };
   }
 
   const { ticket, created } = await createTicketIfNew({
