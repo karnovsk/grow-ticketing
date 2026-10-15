@@ -152,6 +152,7 @@ Skip this if you don't want a logo — `logoUrl` can just be left unset.
 Open **Firebase console → Firestore Database**, and create (or edit) a document at the exact path `settings/emailTemplate` — that means a collection named `settings` containing a document with ID `emailTemplate`. Add any of the fields below (matching Firestore's own field type — most are `string`, `utcOffsetMinutes` is `number`); leave any field out to keep its built-in default (see `functions/src/settings.ts` for the full defaults). Changes take effect on the very next email sent — no redeploy needed.
 
 **Text (string fields):**
+- `fromName` — display name shown before the sender address (e.g. `"הברונית - פאב קהילתי"`); the address itself stays `TICKET_EMAIL_FROM` (Resend) or `GMAIL_USER` (Gmail). Omit or leave empty to send from the bare address.
 - `subject` — email subject line
 - `greeting` — the opening line under the business name; include the literal token `{customerName}` anywhere in the text to have it replaced with the buyer's name (e.g. `"Hi {customerName}, thanks for your purchase!"`, or in Hebrew `"שלום {customerName}, ההזמנה שלך מוכנה לאיסוף!"`). The token is optional — omit it if you don't want the name shown.
 - `qrInstructions` — text shown under the QR code

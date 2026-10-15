@@ -10,6 +10,7 @@ jest.mock('nodemailer', () => ({
 
 jest.mock('./settings', () => ({
   getEmailSettings: jest.fn().mockResolvedValue({
+    fromName: '',
     subject: 'Your pickup ticket',
     preheader: 'Your ticket QR code is inside. Show it at pickup.',
     greeting: 'Hi {customerName}, thanks for your purchase!',
@@ -49,6 +50,7 @@ const sampleTicket: Ticket = {
 };
 
 const sampleSettings: EmailSettings = {
+  fromName: '',
   subject: 'Your pickup ticket',
   preheader: 'Your ticket QR code is inside. Show it at pickup.',
   greeting: 'Hi {customerName}, thanks for your purchase!',
@@ -342,6 +344,31 @@ describe('sendTicketEmail (resend)', () => {
     ]);
   });
 
+  test('sends from the bare address when no fromName is configured', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: true } as Response);
+    await sendTicketEmail(sampleTicket, 'data:image/png;base64,ABC');
+    const body = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body);
+    expect(body.from).toBe('tickets@verified-domain.example');
+  });
+
+  test('prefixes the sender address with the configured fromName', async () => {
+    const settings = { ...sampleSettings, fromName: 'הברונית - פאב קהילתי' };
+    (getEmailSettings as jest.Mock).mockResolvedValueOnce(settings).mockResolvedValueOnce(settings);
+    global.fetch = jest.fn().mockResolvedValue({ ok: true } as Response);
+    await sendTicketEmail(sampleTicket, 'data:image/png;base64,ABC');
+    const body = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body);
+    expect(body.from).toBe('"הברונית - פאב קהילתי" <tickets@verified-domain.example>');
+  });
+
+  test('escapes quotes in the fromName', async () => {
+    const settings = { ...sampleSettings, fromName: 'Joe "the" Pub' };
+    (getEmailSettings as jest.Mock).mockResolvedValueOnce(settings).mockResolvedValueOnce(settings);
+    global.fetch = jest.fn().mockResolvedValue({ ok: true } as Response);
+    await sendTicketEmail(sampleTicket, 'data:image/png;base64,ABC');
+    const body = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body);
+    expect(body.from).toBe('"Joe \\"the\\" Pub" <tickets@verified-domain.example>');
+  });
+
   test('returns false when Resend responds with an error', async () => {
     global.fetch = jest.fn().mockResolvedValue({ ok: false } as Response);
     const result = await sendTicketEmail(sampleTicket, 'data:image/png;base64,ABC');
@@ -389,6 +416,14 @@ describe('sendTicketEmail (gmail)', () => {
     expect(sendMailMock).toHaveBeenCalledWith(
       expect.objectContaining({ from: 'tickets@gmail.com', to: 'jane@example.com' }),
     );
+  });
+
+  test('passes the configured fromName to nodemailer as the sender name', async () => {
+    const settings = { ...sampleSettings, fromName: 'הברונית - פאב קהילתי' };
+    (getEmailSettings as jest.Mock).mockResolvedValueOnce(settings).mockResolvedValueOnce(settings);
+    sendMailMock.mockResolvedValue(undefined);
+    await sendTicketEmail(sampleTicket, 'data:image/png;base64,ABC');
+    expect(sendMailMock.mock.calls[0][0].from).toEqual({ name: 'הברונית - פאב קהילתי', address: 'tickets@gmail.com' });
   });
 
   test('attaches the QR as an inline cid attachment instead of a data: URI in the html', async () => {

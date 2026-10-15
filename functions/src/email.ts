@@ -157,6 +157,14 @@ function qrDataUriToBuffer(qrDataUri: string): Buffer {
   return Buffer.from(qrDataUri.split(',')[1], 'base64');
 }
 
+// Display name shown before the sender address (settings.fromName); empty
+// means the bare address. Quoted so commas, angle brackets and the like in
+// the name can't break the header.
+function formatFromHeader(address: string, name: string): string {
+  if (!name) return address;
+  return `"${name.replace(/["\\]/g, '\\$&')}" <${address}>`;
+}
+
 async function sendViaResend(ticket: Ticket, qrDataUri: string): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -174,7 +182,7 @@ async function sendViaResend(ticket: Ticket, qrDataUri: string): Promise<boolean
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: fromAddress,
+      from: formatFromHeader(fromAddress, settings.fromName),
       to: ticket.customerEmail,
       subject: settings.subject,
       html: buildTicketEmailHtml(ticket, QR_IMAGE_CID, settings),
@@ -206,7 +214,7 @@ async function sendViaGmail(ticket: Ticket, qrDataUri: string): Promise<boolean>
   });
   try {
     await transporter.sendMail({
-      from: user,
+      from: settings.fromName ? { name: settings.fromName, address: user } : user,
       to: ticket.customerEmail,
       subject: settings.subject,
       html: buildTicketEmailHtml(ticket, QR_IMAGE_CID, settings),
