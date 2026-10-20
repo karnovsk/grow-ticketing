@@ -83,7 +83,7 @@ export type TranslationKey =
 
 export const translations: Record<Lang, Record<TranslationKey, string>> = {
   en: {
-    appTitle: 'Grow Ticketing — Staff',
+    appTitle: import.meta.env.VITE_APP_TITLE_EN || 'Grow Ticketing — Staff',
     loginEmailPlaceholder: 'Email',
     loginPasswordPlaceholder: 'Password',
     loginButton: 'Log in',
@@ -164,7 +164,7 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     dashboardDetailInvalidateCancel: 'Cancel',
   },
   he: {
-    appTitle: 'כרטיסי Grow – צוות',
+    appTitle: import.meta.env.VITE_APP_TITLE_HE || 'כרטיסי Grow – צוות',
     loginEmailPlaceholder: 'אימייל',
     loginPasswordPlaceholder: 'סיסמה',
     loginButton: 'התחברות',
