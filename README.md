@@ -191,7 +191,7 @@ To run it on demand instead of waiting for 05:00, open Cloud Scheduler in the Go
 
 ## Sales statistics
 
-The staff app's Statistics tab shows today's tickets and revenue, plus a bar per day that had sales. It reads the `dailySales` collection: one document per Israel-time calendar day (`YYYY-MM-DD`), holding `tickets` and `revenue`. `growWebhook` adds each new ticket to its day in the same transaction that creates the ticket, so a replayed webhook never counts twice. Sales skipped by the webhook (Grow app sales) aren't counted. Picking up, invalidating and archiving tickets don't change the totals, and `dailySales` is never archived, so it holds the full sales history.
+The staff app's Statistics tab shows today's deals and revenue, plus a bar per day that had sales. A deal is one Grow purchase, so one ticket document; it can cover several actual tickets, but Grow's webhook doesn't say how many. The tab reads the `dailySales` collection: one document per Israel-time calendar day (`YYYY-MM-DD`), holding `tickets` (the deal count) and `revenue`. `growWebhook` adds each new ticket to its day in the same transaction that creates the ticket, so a replayed webhook never counts twice. Sales skipped by the webhook (Grow app sales) aren't counted. Picking up, invalidating and archiving tickets don't change the totals, and `dailySales` is never archived, so it holds the full sales history.
 
 Totals start counting from the deploy that introduced them. To include earlier sales, run the backfill once after that deploy, while the venue is closed (it needs ADC, see below):
 

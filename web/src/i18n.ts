@@ -24,12 +24,12 @@ export type TranslationKey =
   | 'navDashboard'
   | 'navStats'
   | 'statsTodayHeading'
-  | 'statsTicketsSold'
+  | 'statsDeals'
   | 'statsRevenue'
   | 'statsHistoryHeading'
   | 'statsMetricLabel'
-  | 'statsTicketsOne'
-  | 'statsTicketsMany'
+  | 'statsDealsOne'
+  | 'statsDealsMany'
   | 'statsDayReadout'
   | 'statsChartHint'
   | 'statsEmpty'
@@ -113,13 +113,13 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     navDashboard: 'Tickets',
     navStats: 'Statistics',
     statsTodayHeading: 'Today, {{date}}',
-    statsTicketsSold: 'Tickets sold',
+    statsDeals: 'Deals',
     statsRevenue: 'Revenue',
     statsHistoryHeading: 'Sales by day',
     statsMetricLabel: 'Show bars by',
-    statsTicketsOne: '1 ticket',
-    statsTicketsMany: '{{count}} tickets',
-    statsDayReadout: '{{date}}: {{tickets}}, {{revenue}}',
+    statsDealsOne: '1 deal',
+    statsDealsMany: '{{count}} deals',
+    statsDayReadout: '{{date}}: {{deals}}, {{revenue}}',
     statsChartHint: 'Tap a bar to see that day.',
     statsEmpty: 'No sales yet. Days show here as soon as the first ticket is sold.',
     statsLoadError: "Sales totals couldn't load. Check your connection and try again.",
@@ -201,13 +201,13 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     navDashboard: 'כרטיסים',
     navStats: 'סטטיסטיקה',
     statsTodayHeading: 'היום, {{date}}',
-    statsTicketsSold: 'כרטיסים שנמכרו',
+    statsDeals: 'עסקאות',
     statsRevenue: 'הכנסות',
     statsHistoryHeading: 'מכירות לפי יום',
     statsMetricLabel: 'הצגת העמודות לפי',
-    statsTicketsOne: 'כרטיס אחד',
-    statsTicketsMany: '{{count}} כרטיסים',
-    statsDayReadout: '{{date}}: {{tickets}}, {{revenue}}',
+    statsDealsOne: 'עסקה אחת',
+    statsDealsMany: '{{count}} עסקאות',
+    statsDayReadout: '{{date}}: {{deals}}, {{revenue}}',
     statsChartHint: 'הקישו על עמודה כדי לראות את אותו יום.',
     statsEmpty: 'עדיין אין מכירות. הימים יופיעו כאן מרגע שנמכר הכרטיס הראשון.',
     statsLoadError: 'לא ניתן היה לטעון את נתוני המכירות. בדקו את החיבור ונסו שוב.',

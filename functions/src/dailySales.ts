@@ -21,6 +21,8 @@ export function salesDayKey(date: Date): string {
 
 export interface DailySales {
   date: string;
+  // Ticket documents created that day: one per Grow purchase (shown as
+  // "deals" in the staff app), which can cover several actual tickets.
   tickets: number;
   revenue: number;
 }

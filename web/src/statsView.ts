@@ -8,6 +8,8 @@ import { t, localeTag } from './i18n';
 // archived, so this is the complete sales history.
 interface DailySales {
   date: string;
+  // Shown as "deals": one per Grow purchase, which can cover several
+  // tickets — the webhook doesn't say how many.
   tickets: number;
   revenue: number;
 }
@@ -36,7 +38,7 @@ export async function renderStatsView(container: HTMLElement) {
       <h2 id="stats-today-heading" class="stats-heading"></h2>
       <dl class="stats-figures">
         <div>
-          <dt>${t('statsTicketsSold')}</dt>
+          <dt>${t('statsDeals')}</dt>
           <dd id="stats-today-tickets"></dd>
         </div>
         <div>
@@ -90,7 +92,7 @@ function renderChart(history: HTMLElement, days: DailySales[], todayKey: string)
   const metricButtons = (['tickets', 'revenue'] as Metric[]).map((value) => {
     const button = document.createElement('button');
     button.type = 'button';
-    button.textContent = t(value === 'tickets' ? 'statsTicketsSold' : 'statsRevenue');
+    button.textContent = t(value === 'tickets' ? 'statsDeals' : 'statsRevenue');
     button.addEventListener('click', () => {
       metric = value;
       draw();
@@ -140,7 +142,7 @@ function renderChart(history: HTMLElement, days: DailySales[], todayKey: string)
       'aria-label',
       t('statsDayReadout', {
         date: formatDay(day.date, 'long'),
-        tickets: ticketsPhrase(day.tickets),
+        deals: dealsPhrase(day.tickets),
         revenue: formatAmount(day.revenue),
       }),
     );
@@ -176,7 +178,7 @@ function renderChart(history: HTMLElement, days: DailySales[], todayKey: string)
     const day = days.find((candidate) => candidate.date === selected)!;
     readout.textContent = t('statsDayReadout', {
       date: formatDay(day.date, 'long'),
-      tickets: ticketsPhrase(day.tickets),
+      deals: dealsPhrase(day.tickets),
       revenue: formatAmount(day.revenue),
     });
   }
@@ -203,8 +205,8 @@ function formatCount(count: number): string {
   return new Intl.NumberFormat(localeTag()).format(count);
 }
 
-function ticketsPhrase(count: number): string {
-  return count === 1 ? t('statsTicketsOne') : t('statsTicketsMany', { count: formatCount(count) });
+function dealsPhrase(count: number): string {
+  return count === 1 ? t('statsDealsOne') : t('statsDealsMany', { count: formatCount(count) });
 }
 
 // `date` is a 'YYYY-MM-DD' venue day, shown day-first like formatDateShort
