@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { itemNames, collectItemNames, itemTint, ITEM_TINT_COUNT, formatAmount, formatTimestamp, formatDateShort } from './format';
+import { itemNames, collectItemNames, itemTint, ITEM_TINT_COUNT, formatAmount, formatTimestamp, formatDateShort, salesDayKey } from './format';
 import { setLang } from './i18n';
 
 describe('itemNames', () => {
@@ -71,5 +71,16 @@ describe('formatDateShort', () => {
   test('pads single-digit day and month', () => {
     const date = new Date(2026, 0, 9, 12, 0, 0);
     expect(formatDateShort(date.getTime() / 1000)).toBe('09/01/26');
+  });
+});
+
+describe('salesDayKey', () => {
+  test('uses the venue day, not UTC, just after local midnight', () => {
+    expect(salesDayKey(new Date('2026-10-21T21:30:00Z'))).toBe('2026-10-22');
+  });
+
+  test('follows the winter offset', () => {
+    expect(salesDayKey(new Date('2026-12-31T22:30:00Z'))).toBe('2027-01-01');
+    expect(salesDayKey(new Date('2026-12-31T21:30:00Z'))).toBe('2026-12-31');
   });
 });

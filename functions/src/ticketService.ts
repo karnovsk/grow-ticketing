@@ -1,7 +1,8 @@
-import { Timestamp } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { randomUUID } from 'crypto';
 import { db } from './admin';
 import { Ticket, TicketItem } from './types';
+import { DAILY_SALES_COLLECTION, salesDayKey } from './dailySales';
 
 const COLLECTION = 'tickets';
 // Idempotency lock keyed by Grow's transactionCode: lets createTicketIfNew
@@ -73,6 +74,19 @@ export async function createTicketIfNew(input: NewTicketInput): Promise<CreateTi
     const ticket = buildNewTicket(ticketId, input);
     tx.set(db.collection(COLLECTION).doc(ticketId), ticket);
     tx.set(lockRef, { ticketId });
+    // Counted here, inside the lock's transaction, so a replayed webhook (which
+    // takes the "lock exists" branch above) can never count the same sale twice.
+    const date = salesDayKey(ticket.issuedAt.toDate());
+    tx.set(
+      db.collection(DAILY_SALES_COLLECTION).doc(date),
+      {
+        date,
+        tickets: FieldValue.increment(1),
+        revenue: FieldValue.increment(ticket.paymentSum),
+        updatedAt: ticket.issuedAt,
+      },
+      { merge: true },
+    );
     return { ticket, created: true };
   });
 }

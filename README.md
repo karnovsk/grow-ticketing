@@ -90,7 +90,7 @@ Come back to step 3 with the resulting webhook URL.
 2. Click the `</>` (web) icon to register a new web app. Give it any nickname; you don't need to set up Hosting in that wizard (it's already configured via `firebase.json`).
 3. Copy the `firebaseConfig` object it shows you (`apiKey`, `authDomain`, `projectId`, `storageBucket`, `messagingSenderId`, `appId`).
 4. Copy `web/.env.example` to `web/.env` and fill in the six `VITE_FIREBASE_*` values from that config. **Double-check `VITE_FIREBASE_PROJECT_ID` matches your actual project ID exactly** — see the warning in step 1 about similarly-named projects.
-5. Run the app locally and confirm it works before deploying (see step 8 for the command). Log in with a staff account from step 5 and confirm you land in the app (scan/search/dashboard nav) rather than an error or blank screen.
+5. Run the app locally and confirm it works before deploying (see step 8 for the command). Log in with a staff account from step 5 and confirm you land in the app (Scan / Tickets / Statistics nav) rather than an error or blank screen.
 6. Deploy the frontend now that `web/.env` is in place:
    ```bash
    ./functions/node_modules/.bin/firebase deploy --only hosting
@@ -179,7 +179,7 @@ The `archiveOldTicketsScheduled` function runs every night at 05:00 Israel time 
 - a ticket that was picked up more than 180 days ago;
 - a ticket that was never picked up and was sold more than 365 days ago.
 
-An archived ticket is gone as far as the staff app is concerned: its QR code scans as "not found", and it doesn't appear in search or the tickets list. `firestore.rules` grants no access to `ticketsArchive`, so the copy (the original ticket plus `archivedAt` and `archiveReason`) is only visible in the Firebase console. To restore one, copy its document back into `tickets` under the same ID.
+An archived ticket is gone as far as the staff app is concerned: its QR code scans as "not found", and it doesn't appear in the Tickets list, even by transaction code. It still counts in the Statistics tab, whose per-day totals are kept separately and never archived. `firestore.rules` grants no access to `ticketsArchive`, so the copy (the original ticket plus `archivedAt` and `archiveReason`) is only visible in the Firebase console. To restore one, copy its document back into `tickets` under the same ID.
 
 Settings live in the Firestore document `settings/archive` (optional — without it the defaults above apply) and take effect on the next run, no redeploy needed:
 
@@ -188,6 +188,21 @@ Settings live in the Firestore document `settings/archive` (optional — without
 - `pickedUpAfterDays` (number, default `180`), `unclaimedAfterDays` (number, default `365`) — must be positive; anything else falls back to the default.
 
 To run it on demand instead of waiting for 05:00, open Cloud Scheduler in the Google Cloud console and use "Force run" on the job.
+
+## Sales statistics
+
+The staff app's Statistics tab shows today's tickets and revenue, plus a bar per day that had sales. It reads the `dailySales` collection: one document per Israel-time calendar day (`YYYY-MM-DD`), holding `tickets` and `revenue`. `growWebhook` adds each new ticket to its day in the same transaction that creates the ticket, so a replayed webhook never counts twice. Sales skipped by the webhook (Grow app sales) aren't counted. Picking up, invalidating and archiving tickets don't change the totals, and `dailySales` is never archived, so it holds the full sales history.
+
+Totals start counting from the deploy that introduced them. To include earlier sales, run the backfill once after that deploy, while the venue is closed (it needs ADC, see below):
+
+```
+cd functions
+npm run build
+node scripts/backfill-daily-sales.mjs --project habaronit-qr --dry-run   # prints the per-day table, writes nothing
+node scripts/backfill-daily-sales.mjs --project habaronit-qr
+```
+
+It rebuilds each day from the `tickets` collection only, overwriting rather than adding, so it's safe to re-run. It doesn't read `ticketsArchive`, so running it after tickets have been archived would undercount those days.
 
 ## One-off Firestore reads/writes from a local script
 

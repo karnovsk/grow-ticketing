@@ -1,6 +1,6 @@
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from './firebaseClient';
-import { resendTicketEmail, validateTicket, invalidateTicket, TicketRecord } from './ticketApi';
+import { resendTicketEmail, validateTicket, invalidateTicket, searchTicketsByField, TicketRecord } from './ticketApi';
 import { collectItemNames, formatAmount, formatTimestamp, formatDateShort, itemNames } from './format';
 import { fuzzyMatch } from './fuzzyMatch';
 import { renderItemLine, icon, statusPill } from './itemTags';
@@ -33,6 +33,11 @@ export async function renderDashboardView(container: HTMLElement) {
   const empty = container.querySelector<HTMLParagraphElement>('#ticket-empty')!;
 
   let currentTickets: TicketRecord[] = [];
+  // Tickets whose transaction code is exactly the filter text, looked up
+  // server-side across every status — so a pasted code finds its ticket even
+  // when the status filter would hide it.
+  let codeMatches: TicketRecord[] = [];
+  let codeLookupId = 0;
   let filterDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   async function load() {
@@ -45,6 +50,31 @@ export async function renderDashboardView(container: HTMLElement) {
     currentTickets = snap.docs.map((doc) => doc.data() as TicketRecord);
     renderItemOptions();
     renderList(true);
+    // Refresh code matches too, so a ticket just validated or invalidated
+    // from the modal shows its new status.
+    lookUpCode();
+  }
+
+  // Grow's codes contain no spaces, so text with spaces is a name, not a code.
+  async function lookUpCode() {
+    const code = ticketFilter.value.trim();
+    const lookupId = ++codeLookupId;
+    if (!code || /\s/.test(code)) {
+      if (codeMatches.length > 0) {
+        codeMatches = [];
+        renderList();
+      }
+      return;
+    }
+    let matches: TicketRecord[];
+    try {
+      matches = await searchTicketsByField('transactionCode', code);
+    } catch {
+      return;
+    }
+    if (lookupId !== codeLookupId) return;
+    codeMatches = matches;
+    renderList();
   }
 
   // Items are free text from each Grow payment link's description, so the
@@ -66,12 +96,22 @@ export async function renderDashboardView(container: HTMLElement) {
   function renderList(animate = false) {
     const filterText = ticketFilter.value;
     const item = itemFilter.value;
+    const code = filterText.trim();
+    // Codes are random base64, so they're matched exactly rather than fuzzily
+    // — a fuzzy match would make short name queries hit unrelated codes.
     const tickets = currentTickets.filter(
       (ticket) =>
         (item === ALL_ITEMS || ticket.items.some((ticketItem) => ticketItem.name === item)) &&
-        (!filterText.trim() ||
+        (!code ||
+          ticket.transactionCode === code ||
           fuzzyMatch(filterText, [ticket.customerName, ticket.customerEmail, ticket.customerPhone]) !== null),
     );
+    // A typed code is an unambiguous request for that ticket, so it shows
+    // whatever the status and item filters say.
+    const shown = new Set(tickets.map((ticket) => ticket.ticketId));
+    for (const match of codeMatches) {
+      if (match.transactionCode === code && !shown.has(match.ticketId)) tickets.push(match);
+    }
 
     list.innerHTML = '';
     empty.hidden = tickets.length > 0;
@@ -135,7 +175,10 @@ export async function renderDashboardView(container: HTMLElement) {
   itemFilter.addEventListener('change', () => renderList());
   ticketFilter.addEventListener('input', () => {
     if (filterDebounceTimer) clearTimeout(filterDebounceTimer);
-    filterDebounceTimer = setTimeout(renderList, FILTER_DEBOUNCE_MS);
+    filterDebounceTimer = setTimeout(() => {
+      renderList();
+      lookUpCode();
+    }, FILTER_DEBOUNCE_MS);
   });
   await load();
 }

@@ -21,8 +21,20 @@ export type TranslationKey =
   | 'headerLogoutButton'
   | 'beerEggLabel'
   | 'navScan'
-  | 'navSearch'
   | 'navDashboard'
+  | 'navStats'
+  | 'statsTodayHeading'
+  | 'statsTicketsSold'
+  | 'statsRevenue'
+  | 'statsHistoryHeading'
+  | 'statsMetricLabel'
+  | 'statsTicketsOne'
+  | 'statsTicketsMany'
+  | 'statsDayReadout'
+  | 'statsChartHint'
+  | 'statsEmpty'
+  | 'statsLoadError'
+  | 'statsRetry'
   | 'noItems'
   | 'scanInstruction'
   | 'scanLookupError'
@@ -36,13 +48,8 @@ export type TranslationKey =
   | 'scanPickedUpTitle'
   | 'scanNextButton'
   | 'scanCameraError'
-  | 'searchFieldTransaction'
-  | 'searchButton'
   | 'searchNotePlaceholder'
   | 'searchValidateButton'
-  | 'searchValidatedSuffix'
-  | 'searchAlreadyPickedUpSuffix'
-  | 'searchNotFoundSuffix'
   | 'searchErrorSuffix'
   | 'statusIssued'
   | 'statusValidated'
@@ -103,8 +110,20 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     headerLogoutButton: 'Log out',
     beerEggLabel: 'Cheers',
     navScan: 'Scan',
-    navSearch: 'Search by Trans. Code',
     navDashboard: 'Tickets',
+    navStats: 'Statistics',
+    statsTodayHeading: 'Today, {{date}}',
+    statsTicketsSold: 'Tickets sold',
+    statsRevenue: 'Revenue',
+    statsHistoryHeading: 'Sales by day',
+    statsMetricLabel: 'Show bars by',
+    statsTicketsOne: '1 ticket',
+    statsTicketsMany: '{{count}} tickets',
+    statsDayReadout: '{{date}}: {{tickets}}, {{revenue}}',
+    statsChartHint: 'Tap a bar to see that day.',
+    statsEmpty: 'No sales yet. Days show here as soon as the first ticket is sold.',
+    statsLoadError: "Sales totals couldn't load. Check your connection and try again.",
+    statsRetry: 'Try again',
     noItems: 'No items',
     scanInstruction: 'Point camera at ticket QR',
     scanLookupError: "Couldn't check this ticket. Try again.",
@@ -118,18 +137,13 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     scanPickedUpTitle: 'Picked up',
     scanNextButton: 'Scan next',
     scanCameraError: 'Could not access the camera. Check camera permissions and try again.',
-    searchFieldTransaction: 'Transaction code',
-    searchButton: 'Search',
     searchNotePlaceholder: 'Verification note (e.g. verified via ID)',
     searchValidateButton: 'Validate manually',
-    searchValidatedSuffix: 'Handed over.',
-    searchAlreadyPickedUpSuffix: 'Already picked up — another staff member validated it just now.',
-    searchNotFoundSuffix: 'Ticket not found.',
     searchErrorSuffix: "That didn't go through. Try again.",
     statusIssued: 'Issued',
     statusValidated: 'Picked up',
     statusAll: 'All',
-    dashboardFilterPlaceholder: 'Filter by name, email, or phone',
+    dashboardFilterPlaceholder: 'Filter by name, email, phone, or transaction code',
     dashboardItemFilterAll: 'All items',
     dashboardEmpty: 'No tickets match these filters.',
     dashboardEmailFailedHint: 'Email failed',
@@ -184,8 +198,20 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     headerLogoutButton: 'התנתקות',
     beerEggLabel: 'לחיים',
     navScan: 'סריקה',
-    navSearch: 'חיפוש לפי אסמכתא',
     navDashboard: 'כרטיסים',
+    navStats: 'סטטיסטיקה',
+    statsTodayHeading: 'היום, {{date}}',
+    statsTicketsSold: 'כרטיסים שנמכרו',
+    statsRevenue: 'הכנסות',
+    statsHistoryHeading: 'מכירות לפי יום',
+    statsMetricLabel: 'הצגת העמודות לפי',
+    statsTicketsOne: 'כרטיס אחד',
+    statsTicketsMany: '{{count}} כרטיסים',
+    statsDayReadout: '{{date}}: {{tickets}}, {{revenue}}',
+    statsChartHint: 'הקישו על עמודה כדי לראות את אותו יום.',
+    statsEmpty: 'עדיין אין מכירות. הימים יופיעו כאן מרגע שנמכר הכרטיס הראשון.',
+    statsLoadError: 'לא ניתן היה לטעון את נתוני המכירות. בדקו את החיבור ונסו שוב.',
+    statsRetry: 'נסו שוב',
     noItems: 'אין פריטים',
     scanInstruction: 'כוונו את המצלמה לקוד ה-QR של הכרטיס',
     scanLookupError: 'לא ניתן היה לבדוק את הכרטיס. נסו שוב.',
@@ -199,18 +225,13 @@ export const translations: Record<Lang, Record<TranslationKey, string>> = {
     scanPickedUpTitle: 'אושר',
     scanNextButton: 'לסריקה הבאה',
     scanCameraError: 'לא ניתן לגשת למצלמה. בדקו את הרשאות המצלמה ונסו שוב.',
-    searchFieldTransaction: 'קוד עסקה',
-    searchButton: 'חיפוש',
     searchNotePlaceholder: 'הערת אימות (למשל: אומת לפי ת.ז.)',
     searchValidateButton: 'אישור ידני',
-    searchValidatedSuffix: 'נמסר.',
-    searchAlreadyPickedUpSuffix: 'כבר נמסר — איש צוות אחר אישר אותו הרגע.',
-    searchNotFoundSuffix: 'הכרטיס לא נמצא.',
     searchErrorSuffix: 'הפעולה לא הושלמה. נסו שוב.',
     statusIssued: 'נרכש',
     statusValidated: 'נמסר',
     statusAll: 'הכל',
-    dashboardFilterPlaceholder: 'סינון לפי שם, אימייל או טלפון',
+    dashboardFilterPlaceholder: 'סינון לפי שם, אימייל, טלפון או קוד עסקה',
     dashboardItemFilterAll: 'כל הפריטים',
     dashboardEmpty: 'אין כרטיסים שתואמים לסינון.',
     dashboardEmailFailedHint: 'האימייל נכשל',

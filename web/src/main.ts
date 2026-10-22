@@ -2,7 +2,7 @@
 import './style.css';
 import { login, logout, watchAuthState, requestPasswordReset } from './auth';
 import { renderScanView, ScanViewHandle } from './scanView';
-import { renderSearchView } from './searchView';
+import { renderStatsView } from './statsView';
 import { renderDashboardView } from './dashboardView';
 import { pourBeer } from './beerPour';
 import { t, getLang, setLang, applyDir, Lang } from './i18n';
@@ -12,7 +12,8 @@ const app = document.querySelector<HTMLDivElement>('#app')!;
 let scanHandle: ScanViewHandle | null = null;
 let hashListenerAttached = false;
 let currentUserEmail: string | null = null;
-let currentRoute: 'scan' | 'search' | 'dashboard' = 'scan';
+type Route = 'scan' | 'dashboard' | 'stats';
+let currentRoute: Route = 'scan';
 // Which logged-out screen is showing, kept so a language toggle redraws the
 // same screen (and the email typed so far) instead of jumping back to login.
 let loginScreen: 'login' | 'reset' = 'login';
@@ -33,11 +34,18 @@ function renderRoute() {
     scanHandle.stop();
     scanHandle = null;
   }
-  currentRoute = (window.location.hash.replace('#', '') || 'scan') as 'scan' | 'search' | 'dashboard';
+  const hash = window.location.hash.replace('#', '');
+  // The old "Search by Trans. Code" tab now lives in the Tickets filter, so
+  // its bookmarks land there.
+  if (hash === 'search') {
+    window.location.replace('#dashboard');
+    return;
+  }
+  currentRoute = (hash || 'scan') as Route;
   markCurrentNav();
   if (currentRoute === 'scan') scanHandle = renderScanView(view);
-  else if (currentRoute === 'search') renderSearchView(view);
   else if (currentRoute === 'dashboard') renderDashboardView(view);
+  else if (currentRoute === 'stats') renderStatsView(view);
 
   // Restart the entrance animation even when navigating to the same route
   // twice in a row (removing the class alone wouldn't retrigger it — the
@@ -74,10 +82,10 @@ function retranslateHeader() {
   if (logoutButton) logoutButton.textContent = t('headerLogoutButton');
   const navScan = document.querySelector<HTMLAnchorElement>('a[href="#scan"]');
   if (navScan) navScan.textContent = t('navScan');
-  const navSearch = document.querySelector<HTMLAnchorElement>('a[href="#search"]');
-  if (navSearch) navSearch.textContent = t('navSearch');
   const navDashboard = document.querySelector<HTMLAnchorElement>('a[href="#dashboard"]');
   if (navDashboard) navDashboard.textContent = t('navDashboard');
+  const navStats = document.querySelector<HTMLAnchorElement>('a[href="#stats"]');
+  if (navStats) navStats.textContent = t('navStats');
 }
 
 function toggleLang() {
@@ -245,7 +253,7 @@ function renderApp(userEmail: string) {
     <nav aria-label="${t('navLabel')}">
       <a href="#scan">${t('navScan')}</a>
       <a href="#dashboard">${t('navDashboard')}</a>
-      <a href="#search">${t('navSearch')}</a>
+      <a href="#stats">${t('navStats')}</a>
     </nav>
     <main id="view"></main>
   `;

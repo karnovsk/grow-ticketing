@@ -54,3 +54,18 @@ export function formatDateShort(seconds: number): string {
   const yy = String(date.getFullYear() % 100).padStart(2, '0');
   return `${dd}/${mm}/${yy}`;
 }
+
+// The venue's local calendar day as 'YYYY-MM-DD' — the id of a dailySales
+// document. Kept in sync with functions/src/dailySales.ts's salesDayKey,
+// which writes them.
+const SALES_TIME_ZONE = 'Asia/Jerusalem';
+const salesDayFormat = new Intl.DateTimeFormat('en-CA', {
+  timeZone: SALES_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+export function salesDayKey(date: Date): string {
+  return salesDayFormat.format(date);
+}

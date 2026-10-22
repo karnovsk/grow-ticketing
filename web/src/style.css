@@ -811,36 +811,6 @@ main.login {
   color: var(--muted);
 }
 
-/* Search results */
-.result-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.result-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.result-name {
-  font-weight: 500;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.result-feedback {
-  margin: 0;
-  font-size: var(--fs-sm);
-  color: var(--muted);
-}
-
-.result-feedback:empty {
-  display: none;
-}
-
 /* ---------------------------------------------------------------------------
    Ticket detail modal
    ------------------------------------------------------------------------ */
@@ -1037,6 +1007,188 @@ main.login {
 }
 
 /* ---------------------------------------------------------------------------
+   Statistics
+   One series, so one hue: past days are the brand color mixed 72% onto the
+   card (>= 3:1 against it in every theme), today is the full brand color.
+   ------------------------------------------------------------------------ */
+.stats-today,
+.stats-history {
+  --bar-past: color-mix(in srgb, var(--primary) 72%, var(--surface));
+  --bar-today: var(--primary);
+}
+
+.stats-heading {
+  margin: 0 0 0.75rem;
+  font-size: var(--fs-base);
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.stats-figures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 0;
+}
+
+.stats-figures dt {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.stats-figures dd {
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: 600;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.stats-toggle {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--surface-sunk);
+}
+
+.stats-toggle button {
+  min-height: 38px;
+  padding: 0.25rem 0.9rem;
+  border: 0;
+  border-radius: calc(var(--radius-control) - 3px);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.stats-toggle button[aria-pressed='true'] {
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 500;
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.stats-toggle button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+/* Axis outside the scroller so the tick values stay put while older days
+   scroll past. The plot's bottom 1.5rem is the date-label row; gridlines and
+   ticks are laid out against the area above it. */
+.stats-chart {
+  --label-row: 1.5rem;
+  display: flex;
+  gap: 0.5rem;
+  block-size: 13rem;
+  margin-block: 1rem 0.75rem;
+}
+
+.stats-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-block-end: calc(var(--label-row) - 0.5em);
+  margin-block-start: -0.5em;
+  font-size: 0.75rem;
+  line-height: 1;
+  color: var(--muted);
+  text-align: end;
+  white-space: nowrap;
+}
+
+.stats-scroller {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+
+.stats-plot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  /* Room for the first and last date labels, which are wider than a bar. */
+  padding-inline: 0.75rem;
+  block-size: 100%;
+  inline-size: max-content;
+  min-inline-size: 100%;
+  background:
+    linear-gradient(var(--line), var(--line)) 0 0 / 100% 1px no-repeat,
+    linear-gradient(var(--line), var(--line)) 0 calc((100% - var(--label-row)) / 2) / 100% 1px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) 0 calc(100% - var(--label-row)) / 100% 1px no-repeat;
+}
+
+.stats-column {
+  flex: 0 0 24px;
+  display: grid;
+  grid-template-rows: 1fr var(--label-row);
+  justify-items: center;
+  align-items: end;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-tag);
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.stats-column:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.stats-bar {
+  inline-size: 16px;
+  border-radius: 4px 4px 0 0;
+  background: var(--bar-past);
+  transform-origin: bottom;
+}
+
+.stats-column-today .stats-bar {
+  background: var(--bar-today);
+}
+
+.stats-column-selected .stats-bar {
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink);
+}
+
+.stats-label {
+  align-self: center;
+  font-size: 0.75rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.stats-column-selected .stats-label {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.stats-readout {
+  margin: 0;
+  font-weight: 500;
+}
+
+.card .stats-hint,
+.stats-hint {
+  margin-block: 0.25rem 0;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.stats-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+/* ---------------------------------------------------------------------------
    Motion — gated entirely behind prefers-reduced-motion so that with it set,
    these classes carry no animation at all (elements just render/disappear in
    their normal state immediately) rather than needing a JS feature check at
@@ -1081,11 +1233,11 @@ main.login {
     animation: modal-pop-out 220ms ease-in both;
   }
 
-  /* A quick, clear pulse marking the moment a pill's status actually flips
-     (search view: validating a ticket swaps this pill in place). */
-  .pill-pop {
-    animation: pill-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* The Statistics tab's one moment: the day bars rise from the baseline. */
+  .stats-plot-enter .stats-bar {
+    animation: bar-rise 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
+
 }
 
 @keyframes view-enter {
@@ -1179,15 +1331,9 @@ main.login {
   }
 }
 
-@keyframes pill-pop {
-  0% {
-    transform: scale(0.7);
-  }
-  60% {
-    transform: scale(1.15);
-  }
-  100% {
-    transform: scale(1);
+@keyframes bar-rise {
+  from {
+    transform: scaleY(0);
   }
 }
 

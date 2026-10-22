@@ -124,7 +124,7 @@ export function renderScanView(container: HTMLElement): ScanViewHandle {
       renderOutcome('error', t('scanNotFoundTitle'), null, null, [
         button(t('scanAgainButton'), resumeScanning, 'btn-primary btn-block'),
         button(t('scanNotFoundSearchLink'), () => {
-          window.location.hash = 'search';
+          window.location.hash = 'dashboard';
         }, 'btn-secondary btn-block'),
       ]);
     } else if (state.phase === 'previewAlreadyValidated') {

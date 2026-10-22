@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin';
 import { createTicketIfNew, getTicketById, updateEmailStatus, validateTicket, invalidateTicket } from './ticketService';
 import { db } from './admin';
+import { DAILY_SALES_COLLECTION, salesDayKey } from './dailySales';
 import { clearFirestoreEmulator } from './testHelpers';
 
 const PROJECT_ID = process.env.GCLOUD_PROJECT || 'demo-grow-ticketing';
@@ -73,6 +74,24 @@ describe('ticketService', () => {
     const literal = await createTicketIfNew({ ...sampleInput, transactionCode: 'a%2Fb' });
     expect(literal.created).toBe(true);
     expect(literal.ticket.ticketId).not.toBe(slashed.ticket.ticketId);
+  });
+
+  test("createTicketIfNew adds each new sale to its day's totals", async () => {
+    const first = await createTicketIfNew(sampleInput);
+    await createTicketIfNew({ ...sampleInput, transactionCode: 'TX-2', paymentSum: 50 });
+    const day = salesDayKey(first.ticket.issuedAt.toDate());
+    const totals = (await db.collection(DAILY_SALES_COLLECTION).doc(day).get()).data();
+    expect(totals).toMatchObject({ date: day, tickets: 2 });
+    expect(totals!.revenue).toBeCloseTo(149.9);
+  });
+
+  test('createTicketIfNew does not count a replayed sale twice', async () => {
+    const first = await createTicketIfNew(sampleInput);
+    await createTicketIfNew(sampleInput);
+    await Promise.all([createTicketIfNew(sampleInput), createTicketIfNew(sampleInput)]);
+    const day = salesDayKey(first.ticket.issuedAt.toDate());
+    const totals = (await db.collection(DAILY_SALES_COLLECTION).doc(day).get()).data();
+    expect(totals).toMatchObject({ tickets: 1, revenue: 99.9 });
   });
 
   test('getTicketById returns null for an unknown id', async () => {

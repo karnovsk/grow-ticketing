@@ -55,3 +55,23 @@ describe('firestore.rules for tickets', () => {
     await assertFails(authedDb.collection('tickets').doc('t2').set({ status: 'issued' }));
   });
 });
+
+describe('firestore.rules for dailySales', () => {
+  test('authenticated users can read daily totals', async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await context.firestore().collection('dailySales').doc('2026-10-22').set({ tickets: 1, revenue: 90 });
+    });
+    const authedDb = testEnv.authenticatedContext('staff-1').firestore();
+    await assertSucceeds(authedDb.collection('dailySales').doc('2026-10-22').get());
+  });
+
+  test('unauthenticated users cannot read daily totals', async () => {
+    const unauthedDb = testEnv.unauthenticatedContext().firestore();
+    await assertFails(unauthedDb.collection('dailySales').doc('2026-10-22').get());
+  });
+
+  test('nobody can write daily totals from the client', async () => {
+    const authedDb = testEnv.authenticatedContext('staff-1').firestore();
+    await assertFails(authedDb.collection('dailySales').doc('2026-10-22').set({ tickets: 999 }));
+  });
+});
